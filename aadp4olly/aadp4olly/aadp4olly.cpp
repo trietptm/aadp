@@ -107,6 +107,7 @@ LRESULT CALLBACK aadp4Ollyproc(HWND hw,UINT msg,WPARAM wp,LPARAM lp) {
 			break;
 
 		case WM_CLOSE:
+			EnableWindow(hwmain, TRUE);
 			return DefWindowProc(hw,msg,wp,lp);
 			break;
 
