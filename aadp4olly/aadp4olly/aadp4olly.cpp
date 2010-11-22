@@ -1,5 +1,4 @@
 // $Id$
-
 /*
  Anti-Anti-Debugging Plugin for Ollydbg - LGPL 3.0
 
@@ -36,8 +35,6 @@ static char      cmdlinewinclass[32];
 
 static int       posx;
 static int       posy;
-
-static int       poponstop;
 
 int Flag = 0;
 

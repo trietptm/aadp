@@ -1,5 +1,4 @@
 // $Id$
-
 #include <windows.h>
 #include <tchar.h>
 #include <Strsafe.h>
