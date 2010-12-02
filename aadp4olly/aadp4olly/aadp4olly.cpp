@@ -1,6 +1,6 @@
 // $Id$
 /*
- Anti-Anti-Debugging Plugin for Ollydbg - LGPL 3.0
+ Anti-Anti-Debugging Plugin for Ollydbg v0.2 - LGPL 3.0
 
  Copyright (C) 2010 +NCR/CRC! [ReVeRsEr] http://crackinglandia.blogspot.com
 
@@ -31,111 +31,27 @@ static HINSTANCE hinst;
 static HWND      hwmain;
 static HWND      hwcmd;  
 
-static char      cmdlinewinclass[32];
-
-static int       posx;
-static int       posy;
+HWND hwPluginWin;
 
 int Flag = 0;
 
-HWND hcbIsDbgPresent, hcbNtGlobalFlags, hcbHeapFlags, hcbOds, hcbGetTickCount, 
-	  hcbZwTIP, hcbZwQIP, hbt_save, hbt_cancel, hedt, hwPluginWin;
-
-bool bIsDbgPresent = FALSE, bNtGlobalFlags = FALSE, bHeapFlags = FALSE, bODS = FALSE, 
-bGetTickCount = FALSE, bZwSIT = FALSE, bZwQIP = FALSE;
-
-void CheckForBSTChecked(HWND hw, DWORD ID, char* Key)
-{
-	if(IsDlgButtonChecked(hw, ID) == BST_CHECKED)
-	{
-		if(!Pluginwriteinttoini(GetModuleHandleA("aadp4olly.dll"), Key, 1))
-			MessageBoxA(hw, "Could't write config to Ollydbg.ini", "Ups!", MB_ICONERROR);
-	}
-	else
-	{
-		if(!Pluginwriteinttoini(GetModuleHandleA("aadp4olly.dll"), Key, 0))
-			MessageBoxA(hw, "Could't write config to Ollydbg.ini", "Ups!", MB_ICONERROR);
-	}
-
-}
-
-void SetOptions(void)
-{
-	CheckForBSTChecked(hwPluginWin, ID_CB_ISDBGPRESENT, "hd_IsDebuggerPresent");
-	CheckForBSTChecked(hwPluginWin, ID_CB_ZWSETINFOTHREAD, "hd_ZwSetInformationThread");
-	CheckForBSTChecked(hwPluginWin, ID_CB_ZWQUERYINFOPROCESS, "hd_ZwQueryInformationProcess");
-	CheckForBSTChecked(hwPluginWin, ID_CB_NTGLOBALFLAGS, "hd_NtGlobalFlags");
-	CheckForBSTChecked(hwPluginWin, ID_CB_HEAPFLAGS, "hd_HeapFlags");
-	CheckForBSTChecked(hwPluginWin, ID_CB_ODSTRING, "hd_OutputDebugString");
-	CheckForBSTChecked(hwPluginWin, ID_CB_GETTICKCOUNT, "hd_GetTickCount");
-}
-
-LRESULT CALLBACK aadp4Ollyproc(HWND hw,UINT msg,WPARAM wp,LPARAM lp) {
-	RECT rc;
-	PAINTSTRUCT ps;
-	HBRUSH hbr;
-	HDC dc;
-
-	hwPluginWin = hw;
-
-	switch(msg)
-	{
-		case WM_COMMAND:
-			if(ID_BT_CANCEL == LOWORD(wp))
-			{	
-				EnableWindow(hwmain, TRUE);
-				DestroyWindow(hw);
-			}
-
-			if(ID_BT_SAVE == LOWORD(wp))
-			{
-				EnableWindow(hwmain, TRUE);
-				SetOptions();
-				DestroyWindow(hw);
-			}
-			break;
-
-		case WM_DESTROY:
-			hwcmd = NULL;
-			break;
-
-		case WM_SETFOCUS:
-			SetFocus(hwcmd);
-			break;
-
-		case WM_CLOSE:
-			EnableWindow(hwmain, TRUE);
-			return DefWindowProc(hw,msg,wp,lp);
-			break;
-
-		case WM_PAINT:
-			dc=BeginPaint(hw,&ps);
-			GetClientRect(hw,&rc);
-			hbr=CreateSolidBrush(GetSysColor(COLOR_BTNFACE));
-			FillRect(dc,&rc,hbr);
-			DeleteObject(hbr);
-			EndPaint(hw,&ps);
-			break;
-
-		default: return DefWindowProc(hw,msg,wp,lp); 
-	};
-	return 0;
-	
-}
-
-void CenterWindowOnScreen(HWND hWin){
-	RECT rc;
-
-	int screenWidth;
-	int screenHeight;
-
-	screenWidth = GetSystemMetrics(SM_CXSCREEN);
-	screenHeight = GetSystemMetrics(SM_CYSCREEN);
-
-	GetClientRect(hwcmd,&rc);
-
-	SetWindowPos(hwcmd, 0, (screenWidth - (rc.right - rc.left))/2, (screenHeight - (rc.bottom - rc.top))/2, 0, 0, SWP_NOZORDER|SWP_NOSIZE);
-}
+bool	bIsDbgPresent = FALSE, 
+		bNtGlobalFlags = FALSE, 
+		bHeapFlags = FALSE, 
+		bODS = FALSE, 
+		bGetTickCount = FALSE, 
+		bZwSIT = FALSE, 
+		bZwQIP = FALSE,
+		bSuspendThread = FALSE,
+		bUEF = FALSE,
+		bModule32Next = FALSE,
+		bProcess32Next = FALSE,
+		bFindWindow = FALSE,
+		bZwQueryObject = FALSE,
+		bZwOpenProcess = FALSE,
+		bTerminateProcess = FALSE,
+		bBlockInput = FALSE,
+		bZWQSI = FALSE;
 
 void CheckForOptions(void)
 {
@@ -143,178 +59,276 @@ void CheckForOptions(void)
 
 	hModule = GetModuleHandleA("aadp4olly.dll");
 	
+	// Check for IsDebuggerPresent
 	if(Pluginreadintfromini(hModule, "hd_IsDebuggerPresent", CW_USEDEFAULT) == 1)
 	{
-			CheckDlgButton(hwPluginWin, ID_CB_ISDBGPRESENT, BST_CHECKED);
+			CheckDlgButton(hwPluginWin, IDC_ISDBGPRESENT, BST_CHECKED);
 			bIsDbgPresent = TRUE;
 	}
 	else
 	{
-			CheckDlgButton(hwPluginWin, ID_CB_ISDBGPRESENT, BST_UNCHECKED);
+			CheckDlgButton(hwPluginWin, IDC_ISDBGPRESENT, BST_UNCHECKED);
 			bIsDbgPresent = FALSE;
 	}
 
+	// Check for NtGlobalFlags
 	if(Pluginreadintfromini(hModule, "hd_NtGlobalFlags", CW_USEDEFAULT) == 1)
 	{
-		CheckDlgButton(hwPluginWin, ID_CB_NTGLOBALFLAGS, BST_CHECKED);
+		CheckDlgButton(hwPluginWin, IDC_NTGLOBALFLAGS, BST_CHECKED);
 		bNtGlobalFlags = TRUE;
 	}
 	else
 	{
-		CheckDlgButton(hwPluginWin, ID_CB_NTGLOBALFLAGS, BST_UNCHECKED);
+		CheckDlgButton(hwPluginWin, IDC_NTGLOBALFLAGS, BST_UNCHECKED);
 		bNtGlobalFlags = FALSE;
 	}
 
+	// Check for HeapFlags
 	if(Pluginreadintfromini(hModule, "hd_HeapFlags", CW_USEDEFAULT) == 1)
 	{
-		CheckDlgButton(hwPluginWin, ID_CB_HEAPFLAGS, BST_CHECKED);
+		CheckDlgButton(hwPluginWin, IDC_HEAPFLAGS, BST_CHECKED);
 		bHeapFlags = TRUE;
 	}
 	else
 	{
-		CheckDlgButton(hwPluginWin, ID_CB_HEAPFLAGS, BST_UNCHECKED);
+		CheckDlgButton(hwPluginWin, IDC_HEAPFLAGS, BST_UNCHECKED);
 		bHeapFlags = FALSE;
 	}
 
+	// Check for ZwSetInformationThread
 	if(Pluginreadintfromini(hModule, "hd_ZwSetInformationThread", CW_USEDEFAULT) == 1)
 	{
-		CheckDlgButton(hwPluginWin, ID_CB_ZWSETINFOTHREAD, BST_CHECKED);
+		CheckDlgButton(hwPluginWin, IDC_ZWSIT, BST_CHECKED);
 		bZwSIT = TRUE;
 	}
 	else
 	{
-		CheckDlgButton(hwPluginWin, ID_CB_ZWSETINFOTHREAD, BST_UNCHECKED);
+		CheckDlgButton(hwPluginWin, IDC_ZWSIT, BST_UNCHECKED);
 		bZwSIT = FALSE;
 	}
 
+	// Check for ZwQueryInformationProcess
 	if(Pluginreadintfromini(hModule, "hd_ZwQueryInformationProcess", CW_USEDEFAULT) == 1)
 	{
-		CheckDlgButton(hwPluginWin, ID_CB_ZWQUERYINFOPROCESS, BST_CHECKED);
+		CheckDlgButton(hwPluginWin, IDC_ZWQIP, BST_CHECKED);
 		bZwQIP = TRUE;
 	}
 	else
 	{
-		CheckDlgButton(hwPluginWin, ID_CB_ZWQUERYINFOPROCESS, BST_UNCHECKED);
+		CheckDlgButton(hwPluginWin, IDC_ZWQIP, BST_UNCHECKED);
 		bZwQIP = FALSE;
 	}
 
+	// Check for GetTickCount
 	if(Pluginreadintfromini(hModule, "hd_GetTickCount", CW_USEDEFAULT) == 1)
 	{
-		CheckDlgButton(hwPluginWin, ID_CB_GETTICKCOUNT, BST_CHECKED);
+		CheckDlgButton(hwPluginWin, IDC_GETTICKCOUNT, BST_CHECKED);
 		bGetTickCount = TRUE;
 	}
 	else
 	{
-		CheckDlgButton(hwPluginWin, ID_CB_GETTICKCOUNT, BST_UNCHECKED);
+		CheckDlgButton(hwPluginWin, IDC_GETTICKCOUNT, BST_UNCHECKED);
 		bGetTickCount = FALSE;
 	}
 
+	// Check for OutputDebugString
 	if(Pluginreadintfromini(hModule, "hd_OutputDebugString", CW_USEDEFAULT) == 1)
 	{
-		CheckDlgButton(hwPluginWin, ID_CB_ODSTRING, BST_CHECKED);
+		CheckDlgButton(hwPluginWin, IDC_ODS, BST_CHECKED);
 		bODS = TRUE;
 	}
 	else
 	{
-		CheckDlgButton(hwPluginWin, ID_CB_ODSTRING, BST_UNCHECKED);
+		CheckDlgButton(hwPluginWin, IDC_ODS, BST_UNCHECKED);
 		bODS = FALSE;
 	}
 
-}
-
-static HWND Createaadp4ollywindow(void) {
-  HFONT hf;
-  RECT rc;
-
-	if(hwcmd == NULL){
-		hwcmd = CreateWindowExA(0L,cmdlinewinclass, (LPCSTR)L"aadp4olly", 
-			WS_POPUPWINDOW|WS_CAPTION|WS_VISIBLE|DS_3DLOOK,
-			posx, posy, DX, DY, hwmain, NULL, (HINSTANCE)Plugingetvalue(VAL_HINST), NULL);
+	// Check for ZwQueryObject
+	if(Pluginreadintfromini(hModule, "hd_ZwQueryObject", CW_USEDEFAULT) == 1)
+	{
+		CheckDlgButton(hwPluginWin, IDC_ZWQUERYOBJECT, BST_CHECKED);
+		bZwQueryObject = TRUE;
+	}
+	else
+	{
+		CheckDlgButton(hwPluginWin, IDC_ZWQUERYOBJECT, BST_UNCHECKED);
+		bZwQueryObject = FALSE;
 	}
 
-	GetClientRect(hwcmd,&rc);
+	// Check for ZwOpenProcess
+	if(Pluginreadintfromini(hModule, "hd_ZwOpenProcess", CW_USEDEFAULT) == 1)
+	{
+		CheckDlgButton(hwPluginWin, IDC_ZWOPENPROCESS, BST_CHECKED);
+		bZwOpenProcess = TRUE;
+	}
+	else
+	{
+		CheckDlgButton(hwPluginWin, IDC_ZWOPENPROCESS, BST_UNCHECKED);
+		bZwOpenProcess = FALSE;
+	}
 
-	hcbIsDbgPresent = CreateWindowExA(0, "BUTTON", "IsDebuggerPresent (via PEB)", WS_CHILD|WS_VISIBLE|BS_AUTOCHECKBOX,
-								5,5,rc.right-50, rc.bottom-200, hwcmd, (HMENU)ID_CB_ISDBGPRESENT, (HINSTANCE)Plugingetvalue(VAL_HINST), NULL);
+	// Check for FindWindow
+	if(Pluginreadintfromini(hModule, "hd_FindWindow", CW_USEDEFAULT) == 1)
+	{
+		CheckDlgButton(hwPluginWin, IDC_FINDWINDOW, BST_CHECKED);
+		bFindWindow = TRUE;
+	}
+	else
+	{
+		CheckDlgButton(hwPluginWin, IDC_FINDWINDOW, BST_UNCHECKED);
+		bFindWindow = FALSE;
+	}
 
-	hf=((HFONT *)Plugingetvalue(VAL_FONTS))[Plugingetvalue(VAL_DEFFONT)];
-    SendMessage(hcbIsDbgPresent,WM_SETFONT,(WPARAM)hf,1);
-    SendMessage(hcbIsDbgPresent,CB_LIMITTEXT,TEXTLEN-1,1);
+	// Check for Module32Next
+	if(Pluginreadintfromini(hModule, "hd_Module32Next", CW_USEDEFAULT) == 1)
+	{
+		CheckDlgButton(hwPluginWin, IDC_MODULE32NEXT, BST_CHECKED);
+		bModule32Next = TRUE;
+	}
+	else
+	{
+		CheckDlgButton(hwPluginWin, IDC_MODULE32NEXT, BST_UNCHECKED);
+		bModule32Next = FALSE;
+	}
 
-	hcbNtGlobalFlags = CreateWindowExA(0, "BUTTON", "NtGlobalFlags", WS_CHILD|WS_VISIBLE|BS_AUTOCHECKBOX,
-								5,25,rc.right-50, rc.bottom-200, hwcmd, (HMENU)ID_CB_NTGLOBALFLAGS, (HINSTANCE)Plugingetvalue(VAL_HINST), NULL);
+	// Check for Process32Next
+	if(Pluginreadintfromini(hModule, "hd_Process32Next", CW_USEDEFAULT) == 1)
+	{
+		CheckDlgButton(hwPluginWin, IDC_PROCESS32NEXT, BST_CHECKED);
+		bProcess32Next = TRUE;
+	}
+	else
+	{
+		CheckDlgButton(hwPluginWin, IDC_PROCESS32NEXT, BST_UNCHECKED);
+		bProcess32Next = FALSE;
+	}
 
-	hf=((HFONT *)Plugingetvalue(VAL_FONTS))[Plugingetvalue(VAL_DEFFONT)];
-    SendMessage(hcbNtGlobalFlags,WM_SETFONT,(WPARAM)hf,1);
-    SendMessage(hcbNtGlobalFlags,CB_LIMITTEXT,TEXTLEN-1,1);
+	// Check for UnhandledExceptionFilter
+	if(Pluginreadintfromini(hModule, "hd_UnhandledExceptionFilter", CW_USEDEFAULT) == 1)
+	{
+		CheckDlgButton(hwPluginWin, IDC_UEF, BST_CHECKED);
+		bUEF = TRUE;
+	}
+	else
+	{
+		CheckDlgButton(hwPluginWin, IDC_UEF, BST_UNCHECKED);
+		bUEF = FALSE;
+	}
 
+	// Check for SuspendThread
+	if(Pluginreadintfromini(hModule, "hd_SuspendThread", CW_USEDEFAULT) == 1)
+	{
+		CheckDlgButton(hwPluginWin, IDC_SUSPENDTHREAD, BST_CHECKED);
+		bSuspendThread = TRUE;
+	}
+	else
+	{
+		CheckDlgButton(hwPluginWin, IDC_SUSPENDTHREAD, BST_UNCHECKED);
+		bSuspendThread = FALSE;
+	}
 
-	hcbHeapFlags = CreateWindowExA(0, "BUTTON", "HeapFlags", WS_CHILD|WS_VISIBLE|BS_AUTOCHECKBOX,
-								5,45,rc.right-50, rc.bottom-200, hwcmd, (HMENU)ID_CB_HEAPFLAGS, (HINSTANCE)Plugingetvalue(VAL_HINST), NULL);
+	// Check for TerminateProcess
+	if(Pluginreadintfromini(hModule, "hd_TerminateProcess", CW_USEDEFAULT) == 1)
+	{
+		CheckDlgButton(hwPluginWin, IDC_TERMINATEPROCESS, BST_CHECKED);
+		bTerminateProcess = TRUE;
+	}
+	else
+	{
+		CheckDlgButton(hwPluginWin, IDC_TERMINATEPROCESS, BST_UNCHECKED);
+		bTerminateProcess = FALSE;
+	}
 
-	hf=((HFONT *)Plugingetvalue(VAL_FONTS))[Plugingetvalue(VAL_DEFFONT)];
-    SendMessage(hcbHeapFlags,WM_SETFONT,(WPARAM)hf,1);
-    SendMessage(hcbHeapFlags,CB_LIMITTEXT,TEXTLEN-1,1);
+	// Check for BlockInput
+	if(Pluginreadintfromini(hModule, "hd_BlockInput", CW_USEDEFAULT) == 1)
+	{
+		CheckDlgButton(hwPluginWin, IDC_BLOCKINPUT, BST_CHECKED);
+		bBlockInput = TRUE;
+	}
+	else
+	{
+		CheckDlgButton(hwPluginWin, IDC_BLOCKINPUT, BST_UNCHECKED);
+		bBlockInput = FALSE;
+	}
 
-	hcbOds = CreateWindowExA(0, "BUTTON", "OutputDebugString (format string)", WS_CHILD|WS_VISIBLE|BS_AUTOCHECKBOX,
-								5,65,rc.right-10, rc.bottom-200, hwcmd, (HMENU)ID_CB_ODSTRING, (HINSTANCE)Plugingetvalue(VAL_HINST), NULL);
+	if(Pluginreadintfromini(hModule, "hd_QuerySystemInformation", CW_USEDEFAULT) == 1)
+	{
+		CheckDlgButton(hwPluginWin, IDC_ZWQSI, BST_CHECKED);
+		bZWQSI = TRUE;
+	}
+	else
+	{
+		CheckDlgButton(hwPluginWin, IDC_ZWQSI, BST_UNCHECKED);
+		bZWQSI = FALSE;
+	}
 
-	hf=((HFONT *)Plugingetvalue(VAL_FONTS))[Plugingetvalue(VAL_DEFFONT)];
-    SendMessage(hcbOds,WM_SETFONT,(WPARAM)hf,1);
-    SendMessage(hcbOds,CB_LIMITTEXT,TEXTLEN-1,1);
-
-	hcbGetTickCount = CreateWindowExA(0, "BUTTON", "GetTickCount", WS_CHILD|WS_VISIBLE|BS_AUTOCHECKBOX,
-								5,85,rc.right-50, rc.bottom-200, hwcmd, (HMENU)ID_CB_GETTICKCOUNT, (HINSTANCE)Plugingetvalue(VAL_HINST), NULL);
-
-	hf=((HFONT *)Plugingetvalue(VAL_FONTS))[Plugingetvalue(VAL_DEFFONT)];
-    SendMessage(hcbGetTickCount,WM_SETFONT,(WPARAM)hf,1);
-    SendMessage(hcbGetTickCount,CB_LIMITTEXT,TEXTLEN-1,1);
-
-	hcbZwTIP = CreateWindowExA(0, "BUTTON", "ZwSetInformationThread", WS_CHILD|WS_VISIBLE|BS_AUTOCHECKBOX,
-								5,105,rc.right-50, rc.bottom-200, hwcmd, (HMENU)ID_CB_ZWSETINFOTHREAD, (HINSTANCE)Plugingetvalue(VAL_HINST), NULL);
-
-	hf=((HFONT *)Plugingetvalue(VAL_FONTS))[Plugingetvalue(VAL_DEFFONT)];
-    SendMessage(hcbZwTIP,WM_SETFONT,(WPARAM)hf,1);
-    SendMessage(hcbZwTIP,CB_LIMITTEXT,TEXTLEN-1,1);
-
-	hcbZwQIP = CreateWindowExA(0, "BUTTON", "ZwQueryInformationProcess", WS_CHILD|WS_VISIBLE|BS_AUTOCHECKBOX,
-								5,125,rc.right-50, rc.bottom-200, hwcmd, (HMENU)ID_CB_ZWQUERYINFOPROCESS, (HINSTANCE)Plugingetvalue(VAL_HINST), NULL);
-
-	hf=((HFONT *)Plugingetvalue(VAL_FONTS))[Plugingetvalue(VAL_DEFFONT)];
-    SendMessage(hcbZwQIP,WM_SETFONT,(WPARAM)hf,1);
-    SendMessage(hcbZwQIP,CB_LIMITTEXT,TEXTLEN-1,1);
-
-	hbt_save = CreateWindowExA(0, "BUTTON", "Save", WS_CHILD|WS_VISIBLE|BS_DEFPUSHBUTTON,
-								30,160,rc.right-180, rc.bottom-200, hwcmd, (HMENU)ID_BT_SAVE, (HINSTANCE)Plugingetvalue(VAL_HINST), NULL);
-
-	hf=((HFONT *)Plugingetvalue(VAL_FONTS))[Plugingetvalue(VAL_DEFFONT)];
-    SendMessage(hbt_save,WM_SETFONT,(WPARAM)hf,1);
-    SendMessage(hbt_save,CB_LIMITTEXT,TEXTLEN-1,1);
-
-	hbt_cancel = CreateWindowExA(0, "BUTTON", "Cancel", WS_CHILD|WS_VISIBLE|BS_DEFPUSHBUTTON,
-								150,160,rc.right-180, rc.bottom-200, hwcmd, (HMENU)ID_BT_CANCEL, (HINSTANCE)Plugingetvalue(VAL_HINST), NULL);
-
-	hf=((HFONT *)Plugingetvalue(VAL_FONTS))[Plugingetvalue(VAL_DEFFONT)];
-    SendMessage(hbt_cancel,WM_SETFONT,(WPARAM)hf,1);
-    SendMessage(hbt_cancel,CB_LIMITTEXT,TEXTLEN-1,1);
-
-	hedt = CreateWindowExA(0, "STATIC", "CracksLatinoS! 2010", WS_CHILD|WS_VISIBLE|SS_CENTER,
-								55,200,rc.right-110, rc.bottom-200, hwcmd, NULL, (HINSTANCE)Plugingetvalue(VAL_HINST), NULL);
-
-	hf=((HFONT *)Plugingetvalue(VAL_FONTS))[Plugingetvalue(VAL_DEFFONT)];
-    SendMessage(hedt,WM_SETFONT,(WPARAM)hf,1);
-    SendMessage(hedt,CB_LIMITTEXT,TEXTLEN-1,1);
-
-	CenterWindowOnScreen(hwcmd);
-	
-	if(hwcmd == NULL)
-		return NULL;
-
-	SetForegroundWindow(hwcmd);
-	return hwcmd;
 }
 
-BOOL WINAPI DllEntryPoint(HINSTANCE hi,DWORD reason,LPVOID reserved) {
+void CheckForBSTChecked(HWND hw, DWORD ID, char* Key)
+{
+	if(IsDlgButtonChecked(hw, ID) == BST_CHECKED)
+	{
+		if(!Pluginwriteinttoini(GetModuleHandleA("aadp4olly.dll"), Key, 1))
+			Addtolist(0, HIGHLIGHTED,"Could't write config to Ollydbg.ini");
+	}
+	else
+	{
+		if(!Pluginwriteinttoini(GetModuleHandleA("aadp4olly.dll"), Key, 0))
+			Addtolist(0, HIGHLIGHTED,"Could't write config to Ollydbg.ini");
+	}
+
+}
+
+void SetOptions(void)
+{
+	CheckForBSTChecked(hwPluginWin, IDC_ISDBGPRESENT, "hd_IsDebuggerPresent");
+	CheckForBSTChecked(hwPluginWin, IDC_ZWSIT, "hd_ZwSetInformationThread");
+	CheckForBSTChecked(hwPluginWin, IDC_ZWQIP, "hd_ZwQueryInformationProcess");
+	CheckForBSTChecked(hwPluginWin, IDC_NTGLOBALFLAGS, "hd_NtGlobalFlags");
+	CheckForBSTChecked(hwPluginWin, IDC_HEAPFLAGS, "hd_HeapFlags");
+	CheckForBSTChecked(hwPluginWin, IDC_ODS, "hd_OutputDebugString");
+	CheckForBSTChecked(hwPluginWin, IDC_GETTICKCOUNT, "hd_GetTickCount");
+	CheckForBSTChecked(hwPluginWin, IDC_ZWQUERYOBJECT, "hd_ZwQueryObject");
+	CheckForBSTChecked(hwPluginWin, IDC_ZWOPENPROCESS, "hd_ZwOpenProcess");
+	CheckForBSTChecked(hwPluginWin, IDC_FINDWINDOW, "hd_FindWindow");
+	CheckForBSTChecked(hwPluginWin, IDC_UEF, "hd_UnhandledExceptionFilter");
+	CheckForBSTChecked(hwPluginWin, IDC_SUSPENDTHREAD, "hd_SuspendThread");
+	CheckForBSTChecked(hwPluginWin, IDC_BLOCKINPUT, "hd_BlockInput");
+	CheckForBSTChecked(hwPluginWin, IDC_TERMINATEPROCESS, "hd_TerminateProcess");
+	CheckForBSTChecked(hwPluginWin, IDC_PROCESS32NEXT, "hd_Process32Next");
+	CheckForBSTChecked(hwPluginWin, IDC_MODULE32NEXT, "hd_Module32Next");
+	CheckForBSTChecked(hwPluginWin, IDC_ZWQSI, "hd_QuerySystemInformation");
+}
+
+LRESULT CALLBACK aadp4Ollyproc(HWND hw,UINT msg,WPARAM wp,LPARAM lp) {
+  hwPluginWin = hw;
+
+  switch(msg)
+  {
+  case WM_INITDIALOG:
+	CheckForOptions();
+    return 1;
+  case WM_COMMAND:
+    switch(wp)
+    {
+    case IDOK:
+		SetOptions();
+		EndDialog(hw, 0);
+		return 0;
+    case IDCANCEL:
+		EndDialog(hw, 0);
+    }
+  }
+  return 0;
+}
+
+static void Createaadp4ollywindow(void) {
+  InitCommonControls();
+  DialogBoxParamA(hinst, (LPCSTR)IDD_AADP4OLLY, hwmain, (DLGPROC)aadp4Ollyproc, 0);
+
+}
+
+BOOL WINAPI DllMain(HINSTANCE hi,DWORD reason,LPVOID reserved) {
 	if (reason == DLL_PROCESS_ATTACH)
 		hinst = hi;
 	return 1;
@@ -332,10 +346,7 @@ extc int _export cdecl ODBG_Plugininit(int ollydbgversion,HWND hw,ulong *feature
 	if (ollydbgversion < PLUGIN_VERSION)
 		return -1;
 
-	if (Registerpluginclass(cmdlinewinclass,NULL,hinst,aadp4Ollyproc)<0)
-		return -1;
-
-	Addtolist(0,0,"aadp4plugin v0.1");
+	Addtolist(0,0,"aadp4plugin v0.2");
 	Addtolist(0,-1,"  Written by +NCR/CRC! [ReVeRsEr]");
 
 	CheckForOptions();
@@ -362,66 +373,128 @@ extc void _export cdecl ODBG_Pluginmainloop(DEBUG_EVENT *debugevent) {
 			{
 				// entonces, patcheo el BeingDebugged flag
 				if(!hd_IsDebuggerPresent(pid))
-					MessageBoxA(hwcmd, "Can't patch BeingDebugged flag on PEB :(", "aadp4olly error", MB_ICONERROR);
+					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch BeingDebugged flag on PEB :(");
 			}
 			if(bNtGlobalFlags)
 			{
 				if(!hd_NtGlobalFlags(pid))
-					MessageBoxA(hwcmd, "Can't patch NtGlobalFlags on PEB :(", "aadp4olly error", MB_ICONERROR);
+					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch NtGlobalFlags flag on PEB :(");
 			}
 			if(bHeapFlags)
 			{
 				if(!hd_HeapFlagsOnPEB(pid))
-					MessageBoxA(hwcmd, "Can't patch HeapFlags on PEB :(", "aadp4olly error", MB_ICONERROR);
+					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch HeapFlags flag on PEB :(");
 			}
 
 			if(bZwQIP)
 			{	
 				if(!hd_HookZwQueryInformationProcess(pid))
-					MessageBoxA(hwcmd, "Can't patch ZwQueryInformationProcess :(", "aadp4olly error", MB_ICONERROR);
+					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch ZwQueryInformationProcess :(");
 			}
 
 			if(bZwSIT)
 			{
 				if(!hd_HookZwSetInformationThread(pid))
-					MessageBoxA(hwcmd, "Can't patch ZwSetInformationThread :(", "aadp4olly error", MB_ICONERROR);
+					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch ZwSetInformationThread :(");
 			}
 
 			if(bGetTickCount)
 			{
 				if(!hd_GetTickCount(pid))
-					MessageBoxA(hwcmd, "Can't patch GetTickCount :(", "aadp4olly error", MB_ICONERROR);
+					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch GetTickCount :(");
 			}
 
 			if(bODS)
 			{
 				if(!hd_HookOutputDebugString(pid))
-					MessageBoxA(hwcmd, "Can't patch OutputDebugStringA :(", "aadp4olly error", MB_ICONERROR);
+					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch OutputDebugString :(");
+			}
+
+			if(bZwQueryObject)
+			{
+				if(!hd_ZwQueryObject(pid))
+					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch ZwQueryObject :(");
+			}
+
+			if(bZwOpenProcess)
+			{
+				if(!hd_ZwOpenProcess(pid, GetCurrentProcessId()))
+					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch ZwOpenProcess :(");
+			}
+
+			if(bFindWindow)
+			{
+				if(!hd_FindWindow((HWND)_Plugingetvalue(VAL_HWMAIN), "", pid))
+					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch FindWindow :(");
+			}
+
+			if(bUEF)
+			{
+				if(!hd_UnhandledExceptionFilter(pid))
+					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch UnhandledExceptionFilter :(");
+			}
+
+			if(bSuspendThread)
+			{
+				if(!hd_SuspendThread(pid))
+					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch SuspendThread :(");
+			}
+
+			if(bBlockInput)
+			{
+				if(!hd_BlockInput(pid))
+					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch BlockInput :(");
+			}
+
+			if(bTerminateProcess)
+			{
+				if(!hd_TerminateProcess(pid))
+					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch TerminateProcess :(");
+			}
+
+			if(bProcess32Next)
+			{
+				if(!hd_Process32Next(pid))
+					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch Process32Next :(");
+			}
+
+			if(bModule32Next)
+			{
+				if(!hd_Module32Next(pid))
+					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch Module32Next :(");
+			}
+
+			if(bZWQSI)
+			{
+				if(!hd_ZwQuerySystemInformation(pid))
+					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch ZwQuerySystemInformation :(");
 			}
 		}
-
 	}
 }
 
 extc int _export cdecl ODBG_Pluginmenu(int origin,char data[4096],void *item) {
-  if (origin!=PM_MAIN)
-    return 0;                          // No pop-up menus in OllyDbg's windows
-  strcpy_s(data,sizeof("0 &Options\tAlt+Q|1 &Help,2 &About"), "0 &Options\tAlt+Q|1 &Help,2 &About");
-  return 1;
+	char str[] = "0 &Options\tAlt+Q|1 &Help,2 &About";
+	if (origin!=PM_MAIN)
+		return 0;
+	strcpy_s(data, 4096, str);
+	return 1;
 }
 
 extc int _export cdecl ODBG_Pluginshortcut(int origin,int ctrl,int alt,int shift,int key,void *item) {
   if(origin == PM_MAIN)
   {
+	  if(key==VK_ESCAPE)
+		  EndDialog(hwPluginWin, 0);
+
 	  if (ctrl==0 && alt==1 && shift==0 && key=='Q') 
 	  {
 		Createaadp4ollywindow();
 		CheckForOptions();
-		EnableWindow(hwmain, FALSE);
 		return 1;
-	  }                       // Shortcut recognized
+	  }                   
   }
-  return 0;                            // Shortcut not recognized
+  return 0;
 };
 
 extc void _export cdecl ODBG_Pluginaction(int origin,int action,void *item) {
@@ -429,18 +502,17 @@ extc void _export cdecl ODBG_Pluginaction(int origin,int action,void *item) {
     return;
 
   switch (action) {
-    case 0:                            // "Command line", creates window
+    case 0:
       Createaadp4ollywindow();
 	  CheckForOptions();
       break;
-    case 1:                            // "Help", opens help file
-      //WinHelp(hwmain,(LPCWSTR)L"aadp4olly.hlp",HELP_CONTENTS,0);
+    case 1:
 		ShellExecuteA(NULL, "open", "http://code.google.com/p/aadp", 0, 0, SW_SHOWNORMAL);
       break;
-    case 2:                            // "About", displays plugin info
+    case 2:
       MessageBoxA(hwmain,
-		  "aadp4olly plugin v0.1\nWritten by +NCR/CRC! [ReVeRsEr]",
-        "aadp4olly",MB_OK|MB_ICONINFORMATION);
+		  "aadp4olly plugin v0.2\nWritten by +NCR/CRC! [ReVeRsEr]",
+        "aadp4olly", MB_OK|MB_ICONINFORMATION);
       break;
     default: break;
   };
@@ -454,8 +526,3 @@ extc void _export cdecl ODBG_Pluginreset(void) {
 	Flag = 0;
 	CheckForOptions();
 }
-
-extc void _export cdecl ODBG_Plugindestroy(void) {
-  Unregisterpluginclass(cmdlinewinclass);
-}
-
