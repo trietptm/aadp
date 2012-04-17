@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "aadp4olly-v.0.3-win32", "aadp4olly-v.0.3-win32\aadp4olly-v.0.3-win32.vcxproj", "{648315B1-56C8-4305-B679-378D269F4CE6}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "aadlib-v0.2-win32", "aadlib-v0.2-win32\aadlib-v0.2-win32.vcxproj", "{D733AB61-913E-42C1-8EA7-94E51EB60250}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "aadpdriver-v0.1-win32", "aadpdriver-v0.1-win32\aadpdriver-v0.1-win32.vcxproj", "{EBC38BFF-9448-41DA-824E-8D045219D709}"
+EndProject
+Global
+	GlobalSection(SubversionScc) = preSolution
+		Svn-Managed = True
+		Manager = AnkhSVN - Subversion Support for Visual Studio
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{648315B1-56C8-4305-B679-378D269F4CE6}.Debug|Win32.ActiveCfg = Release|Win32
+		{648315B1-56C8-4305-B679-378D269F4CE6}.Debug|Win32.Build.0 = Release|Win32
+		{648315B1-56C8-4305-B679-378D269F4CE6}.Release|Win32.ActiveCfg = Release|Win32
+		{648315B1-56C8-4305-B679-378D269F4CE6}.Release|Win32.Build.0 = Release|Win32
+		{D733AB61-913E-42C1-8EA7-94E51EB60250}.Debug|Win32.ActiveCfg = Release|Win32
+		{D733AB61-913E-42C1-8EA7-94E51EB60250}.Debug|Win32.Build.0 = Release|Win32
+		{D733AB61-913E-42C1-8EA7-94E51EB60250}.Release|Win32.ActiveCfg = Release|Win32
+		{D733AB61-913E-42C1-8EA7-94E51EB60250}.Release|Win32.Build.0 = Release|Win32
+		{EBC38BFF-9448-41DA-824E-8D045219D709}.Debug|Win32.ActiveCfg = Debug|Win32
+		{EBC38BFF-9448-41DA-824E-8D045219D709}.Debug|Win32.Build.0 = Debug|Win32
+		{EBC38BFF-9448-41DA-824E-8D045219D709}.Release|Win32.ActiveCfg = Release|Win32
+		{EBC38BFF-9448-41DA-824E-8D045219D709}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
