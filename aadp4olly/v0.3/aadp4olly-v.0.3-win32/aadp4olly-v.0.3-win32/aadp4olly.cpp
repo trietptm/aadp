@@ -475,14 +475,24 @@ INT_PTR CALLBACK SettingsDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wParam, LPAR
 	return true;
 }
 
-INT_PTR CALLBACK CustomHideSettingsDlgTabHandler(HWND Window, UINT Message, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK CustomHideSettingsDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-HWND TabWindow;
-int Index;
+	char szText[MAX_PATH];
 
-	switch(Message)
+	switch(uMsg)
 	{
+		case WM_INITDIALOG:
+			hConfigLb = GetDlgItem(hWin, LB_CONFIGLIST);
+			break;
+
 		case WM_COMMAND:
+			switch(LOWORD(wParam))
+			{
+				case BT_ADDCONFIG:
+					GetDlgItemText(hWin, EDIT_NAME, szText, MAX_PATH);
+					ListBox_AddString(hConfigLb, szText);
+					break;
+			}
 			break;
 
 		default:
