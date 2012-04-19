@@ -37,14 +37,14 @@ ADVANCEDSETTINGS DIALOG 0, 0, 321, 255
 STYLE DS_3DLOOK | DS_CENTER | DS_SHELLFONT | WS_VISIBLE | WS_CHILDWINDOW
 FONT 8, "Ms Shell Dlg"
 {
-    GROUPBOX        "Misc settings", IDC_STATIC, 15, 139, 143, 79
-    GROUPBOX        "Warning messages settings", IDC_STATIC, 13, 18, 144, 71
+    GROUPBOX        "Misc settings", IDC_STATIC, 15, 139, 143, 86
+    GROUPBOX        "Warning messages settings", IDC_STATIC, 14, 19, 144, 64
     GROUPBOX        "Select Advanced Settings", IDC_STATIC, 8, 7, 300, 238
-    AUTOCHECKBOX    "Enable Advanced CTRL+G", CHECK_CTRLG, 17, 28, 103, 8
-    AUTOCHECKBOX    "Skip 'Entry point outside code' warning", CHECK_EPOUTSIDECODE, 17, 39, 137, 8
-    AUTOCHECKBOX    "Skip 'More than 1000 patches'", CHECK_MOREPATCHES, 17, 50, 112, 8
-    AUTOCHECKBOX    "Skip 'Compressed code' warning", CHECK_COMPRESSEDCODE, 17, 61, 118, 8
-    AUTOCHECKBOX    "Skip 'Load DLL' warning", CHECK_LOADDLLWARNING, 17, 72, 93, 8
+    AUTOCHECKBOX    "Enable Advanced CTRL+G", CHECK_CTRLG, 19, 212, 103, 8
+    AUTOCHECKBOX    "Skip 'Entry point outside code' warning", CHECK_EPOUTSIDECODE, 17, 33, 137, 8
+    AUTOCHECKBOX    "Skip 'More than 1000 patches'", CHECK_MOREPATCHES, 17, 45, 112, 8
+    AUTOCHECKBOX    "Skip 'Compressed code' warning", CHECK_COMPRESSEDCODE, 17, 56, 118, 8
+    AUTOCHECKBOX    "Skip 'Load DLL' warning", CHECK_LOADDLLWARNING, 17, 67, 93, 8
     AUTOCHECKBOX    "x64 Compatibility mode (single step)", CHECK_SINGLESTEPCOMPATIBILITY, 19, 201, 127, 8
     AUTOCHECKBOX    "Maximize Olly when starting", CHECK_MAXIMIZEOLLY, 18, 104, 102, 8
     AUTOCHECKBOX    "Maximize all Olly child windows", CHECK_MAXIMIZECHILDS, 18, 115, 113, 8
