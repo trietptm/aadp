@@ -35,269 +35,81 @@ HWND hwPluginWin;
 
 int Flag = 0;
 
-bool	bIsDbgPresent = FALSE, 
-		bNtGlobalFlags = FALSE, 
-		bHeapFlags = FALSE, 
-		bODS = FALSE, 
-		bGetTickCount = FALSE, 
-		bZwSIT = FALSE, 
-		bZwQIP = FALSE,
-		bSuspendThread = FALSE,
-		bUEF = FALSE,
-		bModule32Next = FALSE,
-		bProcess32Next = FALSE,
-		bFindWindow = FALSE,
-		bZwQueryObject = FALSE,
-		bZwOpenProcess = FALSE,
-		bTerminateProcess = FALSE,
-		bBlockInput = FALSE,
-		bZWQSI = FALSE;
+AADPTRICK aadpTricks[SIZEAADBTRICKSARRAY];
+AADPTRICK ollyFixes[SIZEOLLYFIXESARRAY];
+AADPTRICK aadpSettings[SIZEADVSETTINGSARRAY];
 
-void CheckForOptions(void)
+void InitGlobalArrays(void)
 {
+	int i;
+
+	// initialize the aadp tab tricks array
+	for(i = 0; i < SIZEAADBTRICKSARRAY; i++)
+	{
+		aadpTricks[i].functionState = FALSE;
+		aadpTricks[i].functionId = TabAadbTricksControlsId[i];
+		strcpy_s(aadpTricks[i].functionName, MAX_PATH, TabAadbtricksFuncNames[i]);
+	}
+
+	// initialize the aadp tab OllyFixes array
+	for(i = 0; i < SIZEOLLYFIXESARRAY; i++)
+	{
+		ollyFixes[i].functionState = FALSE;
+		ollyFixes[i].functionId = TabOllyFixesControlsId[i];
+		strcpy_s(ollyFixes[i].functionName, MAX_PATH, TabOllyFixesFuncNames[i]);
+	}
+
+	// initialize the aadp tab advanced settings
+	for(i = 0; i < SIZEADVSETTINGSARRAY; i++)
+	{
+		aadpSettings[i].functionState = FALSE;
+		aadpSettings[i].functionId = TabAdvSettingsControlsId[i];
+		strcpy_s(aadpSettings[i].functionName, MAX_PATH, TabOllySettingsFuncNames[i]);
+	}
+}
+
+void CheckForOptions(HWND hWin)
+{
+	int i;
 	HMODULE hModule;
 
 	hModule = GetModuleHandleA("aadp4olly-v.0.3-win32.dll");
 	
-	// Check for IsDebuggerPresent
-	if(Pluginreadintfromini(hModule, "hd_IsDebuggerPresent", CW_USEDEFAULT) == 1)
+	for(i = 0; i < SIZEAADBTRICKSARRAY; i++)
 	{
-			CheckDlgButton(hwPluginWin, CHECK_BEINGDEBUGGED, BST_CHECKED);
-			bIsDbgPresent = TRUE;
+		if(Pluginreadintfromini(hModule, aadpTricks[i].functionName, CW_USEDEFAULT) == 1)
+		{
+				CheckDlgButton(hWin, aadpTricks[i].functionId, BST_CHECKED);
+				aadpTricks[i].functionState = TRUE;
+		}
+		else
+		{
+				CheckDlgButton(hWin, aadpTricks[i].functionId, BST_UNCHECKED);
+				aadpTricks[i].functionState = TRUE;
+		}
 	}
-	else
-	{
-			CheckDlgButton(hwPluginWin, CHECK_BEINGDEBUGGED, BST_UNCHECKED);
-			bIsDbgPresent = FALSE;
-	}
-
-	// Check for NtGlobalFlags
-	if(Pluginreadintfromini(hModule, "hd_NtGlobalFlags", CW_USEDEFAULT) == 1)
-	{
-		CheckDlgButton(hwPluginWin, CHECK_NTGLOBALFLAGS, BST_CHECKED);
-		bNtGlobalFlags = TRUE;
-	}
-	else
-	{
-		CheckDlgButton(hwPluginWin, CHECK_NTGLOBALFLAGS, BST_UNCHECKED);
-		bNtGlobalFlags = FALSE;
-	}
-
-	// Check for HeapFlags
-	if(Pluginreadintfromini(hModule, "hd_HeapFlags", CW_USEDEFAULT) == 1)
-	{
-		CheckDlgButton(hwPluginWin, CHECK_HEAPFLAGS, BST_CHECKED);
-		bHeapFlags = TRUE;
-	}
-	else
-	{
-		CheckDlgButton(hwPluginWin, CHECK_HEAPFLAGS, BST_UNCHECKED);
-		bHeapFlags = FALSE;
-	}
-
-	// Check for ZwSetInformationThread
-	if(Pluginreadintfromini(hModule, "hd_ZwSetInformationThread", CW_USEDEFAULT) == 1)
-	{
-		CheckDlgButton(hwPluginWin, CHECK_SETINFOTHREAD, BST_CHECKED);
-		bZwSIT = TRUE;
-	}
-	else
-	{
-		CheckDlgButton(hwPluginWin, CHECK_SETINFOTHREAD, BST_UNCHECKED);
-		bZwSIT = FALSE;
-	}
-
-	// Check for ZwQueryInformationProcess
-	if(Pluginreadintfromini(hModule, "hd_ZwQueryInformationProcess", CW_USEDEFAULT) == 1)
-	{
-		CheckDlgButton(hwPluginWin, CHECK_ZWQUERYINFOPROCESS, BST_CHECKED);
-		bZwQIP = TRUE;
-	}
-	else
-	{
-		CheckDlgButton(hwPluginWin, CHECK_ZWQUERYINFOPROCESS, BST_UNCHECKED);
-		bZwQIP = FALSE;
-	}
-
-	// Check for GetTickCount
-	if(Pluginreadintfromini(hModule, "hd_GetTickCount", CW_USEDEFAULT) == 1)
-	{
-		CheckDlgButton(hwPluginWin, CHECK_GETTICKCOUNT, BST_CHECKED);
-		bGetTickCount = TRUE;
-	}
-	else
-	{
-		CheckDlgButton(hwPluginWin, CHECK_GETTICKCOUNT, BST_UNCHECKED);
-		bGetTickCount = FALSE;
-	}
-
-	// Check for OutputDebugString
-	if(Pluginreadintfromini(hModule, "hd_OutputDebugString", CW_USEDEFAULT) == 1)
-	{
-		CheckDlgButton(hwPluginWin, CHECK_OUTPUTDEBUGSTRING, BST_CHECKED);
-		bODS = TRUE;
-	}
-	else
-	{
-		CheckDlgButton(hwPluginWin, CHECK_OUTPUTDEBUGSTRING, BST_UNCHECKED);
-		bODS = FALSE;
-	}
-
-	// Check for ZwQueryObject
-	if(Pluginreadintfromini(hModule, "hd_ZwQueryObject", CW_USEDEFAULT) == 1)
-	{
-		CheckDlgButton(hwPluginWin, CHECK_ZWQUERYOBJECT, BST_CHECKED);
-		bZwQueryObject = TRUE;
-	}
-	else
-	{
-		CheckDlgButton(hwPluginWin, CHECK_ZWQUERYOBJECT, BST_UNCHECKED);
-		bZwQueryObject = FALSE;
-	}
-
-	// Check for ZwOpenProcess
-	if(Pluginreadintfromini(hModule, "hd_ZwOpenProcess", CW_USEDEFAULT) == 1)
-	{
-		CheckDlgButton(hwPluginWin, CHECK_ZWOPENPROCESS, BST_CHECKED);
-		bZwOpenProcess = TRUE;
-	}
-	else
-	{
-		CheckDlgButton(hwPluginWin, CHECK_ZWOPENPROCESS, BST_UNCHECKED);
-		bZwOpenProcess = FALSE;
-	}
-
-	// Check for FindWindow
-	if(Pluginreadintfromini(hModule, "hd_FindWindow", CW_USEDEFAULT) == 1)
-	{
-		CheckDlgButton(hwPluginWin, CHECK_FINDWINDOW, BST_CHECKED);
-		bFindWindow = TRUE;
-	}
-	else
-	{
-		CheckDlgButton(hwPluginWin, CHECK_FINDWINDOW, BST_UNCHECKED);
-		bFindWindow = FALSE;
-	}
-
-	// Check for Module32Next
-	if(Pluginreadintfromini(hModule, "hd_Module32Next", CW_USEDEFAULT) == 1)
-	{
-		CheckDlgButton(hwPluginWin, CHECK_MODULE32NEXT, BST_CHECKED);
-		bModule32Next = TRUE;
-	}
-	else
-	{
-		CheckDlgButton(hwPluginWin, CHECK_MODULE32NEXT, BST_UNCHECKED);
-		bModule32Next = FALSE;
-	}
-
-	// Check for Process32Next
-	if(Pluginreadintfromini(hModule, "hd_Process32Next", CW_USEDEFAULT) == 1)
-	{
-		CheckDlgButton(hwPluginWin, CHECK_PROCESS32NEXT, BST_CHECKED);
-		bProcess32Next = TRUE;
-	}
-	else
-	{
-		CheckDlgButton(hwPluginWin, CHECK_PROCESS32NEXT, BST_UNCHECKED);
-		bProcess32Next = FALSE;
-	}
-
-	// Check for UnhandledExceptionFilter
-	if(Pluginreadintfromini(hModule, "hd_UnhandledExceptionFilter", CW_USEDEFAULT) == 1)
-	{
-		CheckDlgButton(hwPluginWin, CHECK_UNHANDLEDEXCEPTIONFILTER, BST_CHECKED);
-		bUEF = TRUE;
-	}
-	else
-	{
-		CheckDlgButton(hwPluginWin, CHECK_UNHANDLEDEXCEPTIONFILTER, BST_UNCHECKED);
-		bUEF = FALSE;
-	}
-
-	// Check for SuspendThread
-	if(Pluginreadintfromini(hModule, "hd_SuspendThread", CW_USEDEFAULT) == 1)
-	{
-		CheckDlgButton(hwPluginWin, CHECK_SUSPENDTHREAD, BST_CHECKED);
-		bSuspendThread = TRUE;
-	}
-	else
-	{
-		CheckDlgButton(hwPluginWin, CHECK_SUSPENDTHREAD, BST_UNCHECKED);
-		bSuspendThread = FALSE;
-	}
-
-	// Check for TerminateProcess
-	if(Pluginreadintfromini(hModule, "hd_TerminateProcess", CW_USEDEFAULT) == 1)
-	{
-		CheckDlgButton(hwPluginWin, CHECK_TERMINATEPROCESS, BST_CHECKED);
-		bTerminateProcess = TRUE;
-	}
-	else
-	{
-		CheckDlgButton(hwPluginWin, CHECK_TERMINATEPROCESS, BST_UNCHECKED);
-		bTerminateProcess = FALSE;
-	}
-
-	// Check for BlockInput
-	if(Pluginreadintfromini(hModule, "hd_BlockInput", CW_USEDEFAULT) == 1)
-	{
-		CheckDlgButton(hwPluginWin, CHECK_BLOCKINPUT, BST_CHECKED);
-		bBlockInput = TRUE;
-	}
-	else
-	{
-		CheckDlgButton(hwPluginWin, CHECK_BLOCKINPUT, BST_UNCHECKED);
-		bBlockInput = FALSE;
-	}
-
-	if(Pluginreadintfromini(hModule, "hd_QuerySystemInformation", CW_USEDEFAULT) == 1)
-	{
-		CheckDlgButton(hwPluginWin, CHECK_ZWQUERYSYSINFO, BST_CHECKED);
-		bZWQSI = TRUE;
-	}
-	else
-	{
-		CheckDlgButton(hwPluginWin, CHECK_ZWQUERYSYSINFO, BST_UNCHECKED);
-		bZWQSI = FALSE;
-	}
-
 }
 
 void CheckForBSTChecked(HWND hw, DWORD ID, char* Key)
 {
 	if(IsDlgButtonChecked(hw, ID) == BST_CHECKED)
 	{
-		if(!Pluginwriteinttoini(GetModuleHandleA("aadp4olly.dll"), Key, 1))
+		if(!Pluginwriteinttoini(GetModuleHandleA("aadp4olly-v.0.3-win32.dll"), Key, 1))
 			Addtolist(0, HIGHLIGHTED,"Could't write config to Ollydbg.ini");
 	}
 	else
 	{
-		if(!Pluginwriteinttoini(GetModuleHandleA("aadp4olly.dll"), Key, 0))
+		if(!Pluginwriteinttoini(GetModuleHandleA("aadp4olly-v.0.3-win32.dll"), Key, 0))
 			Addtolist(0, HIGHLIGHTED,"Could't write config to Ollydbg.ini");
 	}
 
 }
 
-void SetOptions(void)
+void SetOptions(HWND hWin)
 {
-	CheckForBSTChecked(hwPluginWin, CHECK_BEINGDEBUGGED, "hd_IsDebuggerPresent");
-	CheckForBSTChecked(hwPluginWin, CHECK_SETINFOTHREAD, "hd_ZwSetInformationThread");
-	CheckForBSTChecked(hwPluginWin, CHECK_ZWQUERYINFOPROCESS, "hd_ZwQueryInformationProcess");
-	CheckForBSTChecked(hwPluginWin, CHECK_NTGLOBALFLAGS, "hd_NtGlobalFlags");
-	CheckForBSTChecked(hwPluginWin, CHECK_HEAPFLAGS, "hd_HeapFlags");
-	CheckForBSTChecked(hwPluginWin, CHECK_OUTPUTDEBUGSTRING, "hd_OutputDebugString");
-	CheckForBSTChecked(hwPluginWin, CHECK_GETTICKCOUNT, "hd_GetTickCount");
-	CheckForBSTChecked(hwPluginWin, CHECK_ZWQUERYOBJECT, "hd_ZwQueryObject");
-	CheckForBSTChecked(hwPluginWin, CHECK_ZWOPENPROCESS, "hd_ZwOpenProcess");
-	CheckForBSTChecked(hwPluginWin, CHECK_FINDWINDOW, "hd_FindWindow");
-	CheckForBSTChecked(hwPluginWin, CHECK_UNHANDLEDEXCEPTIONFILTER, "hd_UnhandledExceptionFilter");
-	CheckForBSTChecked(hwPluginWin, CHECK_SUSPENDTHREAD, "hd_SuspendThread");
-	CheckForBSTChecked(hwPluginWin, CHECK_BLOCKINPUT, "hd_BlockInput");
-	CheckForBSTChecked(hwPluginWin, CHECK_TERMINATEPROCESS, "hd_TerminateProcess");
-	CheckForBSTChecked(hwPluginWin, CHECK_PROCESS32NEXT, "hd_Process32Next");
-	CheckForBSTChecked(hwPluginWin, CHECK_MODULE32NEXT, "hd_Module32Next");
-	CheckForBSTChecked(hwPluginWin, CHECK_ZWQUERYSYSINFO, "hd_QuerySystemInformation");
+	int count;
+	for(count = 0; count < SIZEAADBTRICKSARRAY; count++)
+			CheckForBSTChecked(hWin, aadpTricks[count].functionId, aadpTricks[count].functionName);
 }
 
 void UI_CheckAllOptions(HWND hw, int State, int Tab)
@@ -308,17 +120,26 @@ void UI_CheckAllOptions(HWND hw, int State, int Tab)
 	{
 		case TABAADBTRICKS:
 			for(count = 0; count < SIZEAADBTRICKSARRAY; count++)
-				CheckDlgButton(hw, TabAadbTricksControlsId[count], State);
+			{
+				aadpTricks[count].functionState = State;
+				CheckDlgButton(hw, aadpTricks[count].functionId, State);
+			}
 			break;
 
 		case TABOLLYFIXES:
 			for(count = 0; count < SIZEOLLYFIXESARRAY; count++)
-				CheckDlgButton(hw, TabOllyFixesControlsId[count], State);
+			{
+				ollyFixes[count].functionState = State;
+				CheckDlgButton(hw, ollyFixes[count].functionId, State);
+			}
 			break;
 
 		case TABADVSETTINGS:
 			for(count = 0; count < SIZEADVSETTINGSARRAY; count++)
-				CheckDlgButton(hw, TabAdvSettingsControlsId[count], State);
+			{
+				aadpSettings[count].functionState = State;
+				CheckDlgButton(hw, aadpSettings[count].functionId, State);
+			}
 			break;
 
 		default: break;
@@ -335,8 +156,6 @@ void DestroyGlobalHandles(void)
 
 LRESULT CALLBACK aadp4Ollyproc(HWND hw,UINT msg,WPARAM wp,LPARAM lp) {
   hwPluginWin = hw;
-  static HWND AadbgTricksDlgHwnd, OllyFixesDlgHwnd, SettingsDlgHwnd, CustomSettingsDlgHwnd, AboutDlgHwnd;
-  static HWND MainTabDlgHwnd;
   int Index;
 
   switch(msg)
@@ -365,7 +184,7 @@ LRESULT CALLBACK aadp4Ollyproc(HWND hw,UINT msg,WPARAM wp,LPARAM lp) {
 	// Bring window of tab1 to front
 	TabToFront(MainTabDlgHwnd, Index);
 	
-	CheckForOptions();
+	CheckForOptions(AadbgTricksDlgHwnd);
 
 	return 1;
 
@@ -384,9 +203,10 @@ LRESULT CALLBACK aadp4Ollyproc(HWND hw,UINT msg,WPARAM wp,LPARAM lp) {
     switch(wp)
     {
     case IDOK:
-		SetOptions();
+		SetOptions(AadbgTricksDlgHwnd);
 		EndDialog(hw, 0);
 		return 0;
+
     case IDCANCEL:
 		// Tab clean-up
 		TabCleanup(MainTabDlgHwnd);
@@ -477,6 +297,7 @@ INT_PTR CALLBACK SettingsDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wParam, LPAR
 
 INT_PTR CALLBACK CustomHideSettingsDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+	int iState, iCount;
 	char szText[MAX_PATH];
 
 	switch(uMsg)
@@ -490,7 +311,23 @@ INT_PTR CALLBACK CustomHideSettingsDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wP
 			{
 				case BT_ADDCONFIG:
 					GetDlgItemText(hWin, EDIT_NAME, szText, MAX_PATH);
-					ListBox_AddString(hConfigLb, szText);
+					if(strlen(szText) > 0)
+						ListBox_AddString(hConfigLb, szText);
+					break;
+
+				case BT_REMOVEFROMCONFIGLIST:
+					iCount = ListBox_GetCount(hConfigLb);
+					if(( iCount > 0) && (ListBox_GetSelCount(hConfigLb) > 0))
+					{
+						Addtolist(0, HIGHLIGHTED, "1: %d", iCount);
+						while(iCount >= 0)
+						{
+							iState = ListBox_GetSel(hConfigLb, iCount);
+							if((iState > 0) && (iState != LB_ERR))
+								ListBox_DeleteString(hConfigLb, iCount);
+							iCount--;
+						}
+					}
 					break;
 			}
 			break;
@@ -592,7 +429,9 @@ extc int _export cdecl ODBG_Plugininit(int ollydbgversion,HWND hw,ulong *feature
 	Addtolist(0,0,"aadp4plugin v0.2");
 	Addtolist(0,-1,"  Written by +NCR/CRC! [ReVeRsEr]");
 
-	CheckForOptions();
+	InitGlobalArrays();
+
+	CheckForOptions(AadbgTricksDlgHwnd);
 	return 0;
 
 }
@@ -600,6 +439,7 @@ extc int _export cdecl ODBG_Plugininit(int ollydbgversion,HWND hw,ulong *feature
 extc void _export cdecl ODBG_Pluginmainloop(DEBUG_EVENT *debugevent) {
 	t_status status;
 	DWORD pid = -1;
+	int i;
 
 	status = Getstatus();
 
@@ -612,106 +452,106 @@ extc void _export cdecl ODBG_Pluginmainloop(DEBUG_EVENT *debugevent) {
 		{
 			// esta el checkbox de IsDebuggerPresent activado? ...
 			pid = _Plugingetvalue(VAL_PROCESSID);
-			if(bIsDbgPresent)
+
+			for(i = 0; i < SIZEAADBTRICKSARRAY; i++)
 			{
-				// entonces, patcheo el BeingDebugged flag
-				if(!hd_IsDebuggerPresent(pid))
-					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch BeingDebugged flag on PEB :(");
-			}
-			if(bNtGlobalFlags)
-			{
-				if(!hd_NtGlobalFlags(pid))
-					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch NtGlobalFlags flag on PEB :(");
-			}
-			if(bHeapFlags)
-			{
-				if(!hd_HeapFlagsOnPEB(pid))
-					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch HeapFlags flag on PEB :(");
+				switch(aadpTricks[i].functionId)
+				{
+					case CHECK_RDTSC: 
+						break; 
+
+					case CHECK_BEINGDEBUGGED: 
+						if(!hd_IsDebuggerPresent(pid))
+							Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch BeingDebugged flag on PEB :(");
+						break; 
+
+					case CHECK_FORCEFLAGS: 
+						break; 
+
+					case CHECK_SETINFOTHREAD: 
+						if(!hd_HookZwSetInformationThread(pid))
+							Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch ZwSetInformationThread :(");
+						break;
+
+					case CHECK_ZWQUERYINFOPROCESS: 
+						if(!hd_HookZwQueryInformationProcess(pid))
+							Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch ZwQueryInformationProcess :(");
+						break; 
+
+					case CHECK_NTGLOBALFLAGS: 
+						if(!hd_NtGlobalFlags(pid))
+							Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch NtGlobalFlags flag on PEB :(");
+						break; 
+
+					case CHECK_HEAPFLAGS: 
+						if(!hd_HeapFlagsOnPEB(pid))
+							Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch HeapFlags flag on PEB :(");
+						break; 
+
+					case CHECK_OUTPUTDEBUGSTRING: 
+						if(!hd_HookOutputDebugString(pid))
+							Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch OutputDebugString :(");
+						break; 
+
+					case CHECK_ZWQUERYOBJECT: 
+						if(!hd_ZwQueryObject(pid))
+							Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch ZwQueryObject :(");
+						break; 
+
+					case CHECK_ZWOPENPROCESS:
+						if(!hd_ZwOpenProcess(pid, GetCurrentProcessId()))
+							Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch ZwOpenProcess :(");
+						break; 
+					
+					case CHECK_FINDWINDOW:
+						if(!hd_FindWindow((HWND)_Plugingetvalue(VAL_HWMAIN), "", pid))
+							Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch FindWindow :(");
+						break; 
+
+					case CHECK_UNHANDLEDEXCEPTIONFILTER: 
+						if(!hd_UnhandledExceptionFilter(pid))
+							Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch UnhandledExceptionFilter :(");
+						break; 
+
+					case CHECK_SUSPENDTHREAD: 
+						if(!hd_SuspendThread(pid))
+							Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch SuspendThread :(");
+						break; 
+
+					case CHECK_BLOCKINPUT: 
+						if(!hd_BlockInput(pid))
+							Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch BlockInput :(");
+						break; 
+
+					case CHECK_TERMINATEPROCESS: 
+						if(!hd_TerminateProcess(pid))
+							Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch TerminateProcess :(");
+						break; 
+
+					case CHECK_PROCESS32NEXT: 
+						if(!hd_Process32Next(pid))
+							Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch Process32Next :(");
+						break; 
+
+					case CHECK_MODULE32NEXT: 
+						if(!hd_Module32Next(pid))
+							Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch Module32Next :(");
+						break; 
+
+					case CHECK_ZWQUERYSYSINFO: 
+						if(!hd_ZwQuerySystemInformation(pid))
+							Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch ZwQuerySystemInformation :(");
+						break;
+	
+					default: break;
+				}
 			}
 
-			if(bZwQIP)
-			{	
-				if(!hd_HookZwQueryInformationProcess(pid))
-					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch ZwQueryInformationProcess :(");
-			}
-
-			if(bZwSIT)
-			{
-				if(!hd_HookZwSetInformationThread(pid))
-					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch ZwSetInformationThread :(");
-			}
-
-			if(bGetTickCount)
-			{
-				if(!hd_GetTickCount(pid))
-					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch GetTickCount :(");
-			}
-
-			if(bODS)
-			{
-				if(!hd_HookOutputDebugString(pid))
-					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch OutputDebugString :(");
-			}
-
-			if(bZwQueryObject)
-			{
-				if(!hd_ZwQueryObject(pid))
-					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch ZwQueryObject :(");
-			}
-
-			if(bZwOpenProcess)
-			{
-				if(!hd_ZwOpenProcess(pid, GetCurrentProcessId()))
-					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch ZwOpenProcess :(");
-			}
-
-			if(bFindWindow)
-			{
-				if(!hd_FindWindow((HWND)_Plugingetvalue(VAL_HWMAIN), "", pid))
-					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch FindWindow :(");
-			}
-
-			if(bUEF)
-			{
-				if(!hd_UnhandledExceptionFilter(pid))
-					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch UnhandledExceptionFilter :(");
-			}
-
-			if(bSuspendThread)
-			{
-				if(!hd_SuspendThread(pid))
-					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch SuspendThread :(");
-			}
-
-			if(bBlockInput)
-			{
-				if(!hd_BlockInput(pid))
-					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch BlockInput :(");
-			}
-
-			if(bTerminateProcess)
-			{
-				if(!hd_TerminateProcess(pid))
-					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch TerminateProcess :(");
-			}
-
-			if(bProcess32Next)
-			{
-				if(!hd_Process32Next(pid))
-					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch Process32Next :(");
-			}
-
-			if(bModule32Next)
-			{
-				if(!hd_Module32Next(pid))
-					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch Module32Next :(");
-			}
-
-			if(bZWQSI)
-			{
-				if(!hd_ZwQuerySystemInformation(pid))
-					Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch ZwQuerySystemInformation :(");
-			}
+			//if(bGetTickCount)
+			//{
+			//	if(!hd_GetTickCount(pid))
+			//		Addtolist(0, HIGHLIGHTED, "aadp4olly error: Can't patch GetTickCount :(");
+			//}
 		}
 	}
 }
@@ -733,7 +573,7 @@ extc int _export cdecl ODBG_Pluginshortcut(int origin,int ctrl,int alt,int shift
 	  if (ctrl==0 && alt==1 && shift==0 && key=='Q') 
 	  {
 		Createaadp4ollywindow();
-		CheckForOptions();
+		CheckForOptions(AadbgTricksDlgHwnd);
 		return 1;
 	  }                   
   }
@@ -747,7 +587,7 @@ extc void _export cdecl ODBG_Pluginaction(int origin,int action,void *item) {
   switch (action) {
     case 0:
       Createaadp4ollywindow();
-	  CheckForOptions();
+	  CheckForOptions(AadbgTricksDlgHwnd);
       break;
     case 1:
 		ShellExecuteA(NULL, "open", "http://code.google.com/p/aadp", 0, 0, SW_SHOWNORMAL);
@@ -768,5 +608,5 @@ extc int _export cdecl ODBG_Pluginclose(void) {
 
 extc void _export cdecl ODBG_Pluginreset(void) {
 	Flag = 0;
-	CheckForOptions();
+	CheckForOptions(AadbgTricksDlgHwnd);
 }

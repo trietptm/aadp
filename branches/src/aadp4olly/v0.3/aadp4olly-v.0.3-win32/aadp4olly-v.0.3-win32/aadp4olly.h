@@ -57,15 +57,22 @@
 #define SIZEOLLYFIXESARRAY	5
 #define SIZEADVSETTINGSARRAY 12
 
+typedef struct _AADPTRICK {
+	char functionName[MAX_PATH];
+	int functionId;
+	int functionState;
+} AADPTRICK, *PAADPTRICK;
+
 /* Function prototypes */
-INT_PTR CALLBACK AadbgTricksDlgTabHandler(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK OllyFixesDlgHandlerTabHandler(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK SettingsDlgTabHandler(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK CustomHideSettingsDlgTabHandler(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK AboutDlgHandler(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK AadbgTricksDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wParam, LPARAM lParam);
+INT_PTR CALLBACK OllyFixesDlgHandlerTabHandler(HWND hWin, UINT uMsg, WPARAM wParam, LPARAM lParam);
+INT_PTR CALLBACK SettingsDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wParam, LPARAM lParam);
+INT_PTR CALLBACK CustomHideSettingsDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wParam, LPARAM lParam);
+INT_PTR CALLBACK AboutDlgHandler(HWND hWin, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 /* Global variables declaration */
-HWND hRadioNoCounter = NULL, hCounterPlusOne = NULL, hRandomCounter = NULL;
+HWND hRadioNoCounter = NULL, hCounterPlusOne = NULL, hRandomCounter = NULL, hConfigLb = NULL;
+HWND MainTabDlgHwnd, AadbgTricksDlgHwnd, OllyFixesDlgHwnd, SettingsDlgHwnd, CustomSettingsDlgHwnd, AboutDlgHwnd;
 
 int TabAadbTricksControlsId[SIZEAADBTRICKSARRAY] = {CHECK_RDTSC, CHECK_BEINGDEBUGGED, CHECK_FORCEFLAGS, CHECK_SETINFOTHREAD,
 CHECK_ZWQUERYINFOPROCESS, CHECK_NTGLOBALFLAGS, CHECK_HEAPFLAGS, CHECK_OUTPUTDEBUGSTRING, 
@@ -80,4 +87,13 @@ int TabAdvSettingsControlsId[SIZEADVSETTINGSARRAY] = {CHECK_CTRLG, CHECK_EPOUTSI
 CHECK_COMPRESSEDCODE, CHECK_LOADDLLWARNING, CHECK_SINGLESTEPCOMPATIBILITY, CHECK_MAXIMIZEOLLY, 
 CHECK_MAXIMIZECHILDS, CHECK_SKIPEXCEPTIONS, CHECK_REALTIMEPATCHING, CHECK_BREAKONTLS, CHECK_ANTIANTIATTACH};
 
-HWND hConfigLb;
+char* TabAadbtricksFuncNames[SIZEAADBTRICKSARRAY] = {"hd_Rdtsc", "hd_IsDebuggerPresent", "hd_ForceFlags", "hd_ZwSetInformationThread", 
+"hd_ZwQueryInformationProcess", "hd_NtGlobalFlags", "hd_HeapFlags", "hd_OutputDebugString", "hd_ZwQueryObject", "hd_ZwOpenProcess", 
+"hd_FindWindow", "hd_UnhandledExceptionFilter", "hd_SuspendThread", "hd_BlockInput", "hd_TerminateProcess", "hd_Process32Next", 
+"hd_Module32Next", "hd_QuerySystemInformation"};
+
+char* TabOllyFixesFuncNames[SIZEOLLYFIXESARRAY] = {"hd_FixFldz", "hd_FixFuistq", "hd_FixNumberOfRvaAndSizes", "hd_FixFormatStringBug", "hd_FixAnalysisCrash"};
+
+char* TabOllySettingsFuncNames[SIZEADVSETTINGSARRAY] = {"hd_EnableCtrlG", "hd_SkipEpOutsideCode", "hd_SkipMorePatches", 
+"hd_SkipCompressedCode", "hd_SkipLoadDll", "hd_MaximizeOlly", "hd_MaximizeChilds", "hd_SkipSomeExceptions", "hd_EnableRealTimePatching", 
+"hd_BreakOnTls", "hd_AntiAntiAttach", "hd_EnableSingleStep"};
