@@ -68,25 +68,38 @@ void InitGlobalArrays(void)
 	}
 }
 
-void CheckForOptions(HWND hWin)
+void CheckForOptions(HWND hWin, int Tab)
 {
 	int i;
 	HMODULE hModule;
 
 	hModule = GetModuleHandleA("aadp4olly-v.0.3-win32.dll");
 	
-	for(i = 0; i < SIZEAADBTRICKSARRAY; i++)
+	switch(Tab)
 	{
-		if(Pluginreadintfromini(hModule, aadpTricks[i].functionName, CW_USEDEFAULT) == 1)
-		{
-				CheckDlgButton(hWin, aadpTricks[i].functionId, BST_CHECKED);
-				aadpTricks[i].functionState = TRUE;
-		}
-		else
-		{
-				CheckDlgButton(hWin, aadpTricks[i].functionId, BST_UNCHECKED);
-				aadpTricks[i].functionState = TRUE;
-		}
+		case TABAADBTRICKS:
+			for(i = 0; i < SIZEAADBTRICKSARRAY; i++)
+			{
+				if(Pluginreadintfromini(hModule, aadpTricks[i].functionName, CW_USEDEFAULT) == 1)
+				{
+						CheckDlgButton(hWin, aadpTricks[i].functionId, BST_CHECKED);
+						aadpTricks[i].functionState = TRUE;
+				}
+				else
+				{
+						CheckDlgButton(hWin, aadpTricks[i].functionId, BST_UNCHECKED);
+						aadpTricks[i].functionState = TRUE;
+				}
+			}
+			break;
+
+		case TABOLLYFIXES:
+			break;
+
+		case TABADVSETTINGS:
+			break;
+
+		default: break;
 	}
 }
 
@@ -105,11 +118,24 @@ void CheckForBSTChecked(HWND hw, DWORD ID, char* Key)
 
 }
 
-void SetOptions(HWND hWin)
+void SetOptions(HWND hWin, int Tab)
 {
 	int count;
-	for(count = 0; count < SIZEAADBTRICKSARRAY; count++)
-			CheckForBSTChecked(hWin, aadpTricks[count].functionId, aadpTricks[count].functionName);
+	switch(Tab)
+	{
+		case TABAADBTRICKS:
+			for(count = 0; count < SIZEAADBTRICKSARRAY; count++)
+				CheckForBSTChecked(hWin, aadpTricks[count].functionId, aadpTricks[count].functionName);
+			break;
+
+		case TABOLLYFIXES:
+			break;
+
+		case TABADVSETTINGS:
+			break;
+
+		default: break;
+	}
 }
 
 void UI_CheckAllOptions(HWND hw, int State, int Tab)
@@ -184,7 +210,7 @@ LRESULT CALLBACK aadp4Ollyproc(HWND hw,UINT msg,WPARAM wp,LPARAM lp) {
 	// Bring window of tab1 to front
 	TabToFront(MainTabDlgHwnd, Index);
 	
-	CheckForOptions(AadbgTricksDlgHwnd);
+	CheckForOptions(AadbgTricksDlgHwnd, TABAADBTRICKS);
 
 	return 1;
 
@@ -203,7 +229,7 @@ LRESULT CALLBACK aadp4Ollyproc(HWND hw,UINT msg,WPARAM wp,LPARAM lp) {
     switch(wp)
     {
     case IDOK:
-		SetOptions(AadbgTricksDlgHwnd);
+		SetOptions(AadbgTricksDlgHwnd, TABAADBTRICKS);
 		EndDialog(hw, 0);
 		return 0;
 
@@ -431,7 +457,7 @@ extc int _export cdecl ODBG_Plugininit(int ollydbgversion,HWND hw,ulong *feature
 
 	InitGlobalArrays();
 
-	CheckForOptions(AadbgTricksDlgHwnd);
+	CheckForOptions(AadbgTricksDlgHwnd, TABAADBTRICKS);
 	return 0;
 
 }
@@ -573,7 +599,7 @@ extc int _export cdecl ODBG_Pluginshortcut(int origin,int ctrl,int alt,int shift
 	  if (ctrl==0 && alt==1 && shift==0 && key=='Q') 
 	  {
 		Createaadp4ollywindow();
-		CheckForOptions(AadbgTricksDlgHwnd);
+		CheckForOptions(AadbgTricksDlgHwnd, TABAADBTRICKS);
 		return 1;
 	  }                   
   }
@@ -587,7 +613,7 @@ extc void _export cdecl ODBG_Pluginaction(int origin,int action,void *item) {
   switch (action) {
     case 0:
       Createaadp4ollywindow();
-	  CheckForOptions(AadbgTricksDlgHwnd);
+	  CheckForOptions(AadbgTricksDlgHwnd, TABAADBTRICKS);
       break;
     case 1:
 		ShellExecuteA(NULL, "open", "http://code.google.com/p/aadp", 0, 0, SW_SHOWNORMAL);
@@ -608,5 +634,5 @@ extc int _export cdecl ODBG_Pluginclose(void) {
 
 extc void _export cdecl ODBG_Pluginreset(void) {
 	Flag = 0;
-	CheckForOptions(AadbgTricksDlgHwnd);
+	CheckForOptions(AadbgTricksDlgHwnd, TABAADBTRICKS);
 }
