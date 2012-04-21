@@ -354,27 +354,30 @@ void HandleChecks(HWND hWin, WPARAM wParam, int Tab)
 	unsigned int a, b;
 	
 	bId = WORD(wParam & 0xffff);
-	
+	a = IsDlgButtonChecked(hWin, bId);
+
 	switch(Tab)
 	{
 		case TABAADBTRICKS: 
 			Index = GetControlIdInArray(bId, aadpTricks, SIZEAADBTRICKSARRAY+1);
+			aadpTricks[Index].functionState = a;
 			checkId = CHECK_SELECTALL;
 			break;
 
 		case TABOLLYFIXES: 
 			Index = GetControlIdInArray(bId, ollyFixes, SIZEOLLYFIXESARRAY);
+			ollyFixes[Index].functionState = a;
 			checkId = CHECK_TABFIXES_SELECTALL;
 			break;
 
 		case TABADVSETTINGS: 
 			Index = GetControlIdInArray(bId, aadpSettings, SIZEADVSETTINGSARRAY);
+			aadpSettings[Index].functionState = a;
 			checkId = CHECK_TABADVSETTINGS_SELECTALL;
 			break;
 	}
 
 	b = IsDlgButtonChecked(hWin, checkId);
-	a = IsDlgButtonChecked(hWin, bId);
 
 	if(a == BST_UNCHECKED && b == BST_CHECKED)
 	{
