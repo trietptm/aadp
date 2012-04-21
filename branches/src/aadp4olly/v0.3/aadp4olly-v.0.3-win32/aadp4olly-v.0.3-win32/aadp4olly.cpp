@@ -35,14 +35,34 @@ HWND hwPluginWin;
 
 int Flag = 0;
 
-AADPTRICK aadpTricks[SIZEAADBTRICKSARRAY];
+// the additional element is to hold the GetTickCount option
+AADPTRICK aadpTricks[SIZEAADBTRICKSARRAY+1];
 AADPTRICK ollyFixes[SIZEOLLYFIXESARRAY];
 AADPTRICK aadpSettings[SIZEADVSETTINGSARRAY];
+GETTICKCOUNTOPTION GetTickCountOpt;
+
+HMODULE hModule = GetModuleHandleA("aadp4olly-v.0.3-win32.dll");
+
+void _InitGlobalArray(PAADPTRICK tricks, int arraySize, int sourceArrayIds[], char* sourceArrayNames[])
+{
+	int i;
+
+	for(i = 0; i < arraySize; i++)
+	{
+		tricks[i].functionState = FALSE;
+		tricks[i].functionId = sourceArrayIds[i];
+		strcpy_s(tricks[i].functionName, MAX_PATH, sourceArrayNames[i]);
+	}
+
+}
 
 void InitGlobalArrays(void)
 {
 	int i;
 
+	//_InitGlobalArray(aadpTricks, SIZEAADBTRICKSARRAY, TabAadbTricksControlsId, TabAadbtricksFuncNames);
+	//_InitGlobalArray(ollyFixes, SIZEOLLYFIXESARRAY, TabOllyFixesControlsId, TabOllyFixesFuncNames);
+	//_InitGlobalArray(aadpTricks, SIZEAADBTRICKSARRAY, TabAdvSettingsControlsId, TabOllySettingsFuncNames);
 	// initialize the aadp tab tricks array
 	for(i = 0; i < SIZEAADBTRICKSARRAY; i++)
 	{
@@ -51,7 +71,18 @@ void InitGlobalArrays(void)
 		strcpy_s(aadpTricks[i].functionName, MAX_PATH, TabAadbtricksFuncNames[i]);
 	}
 
-	// initialize the aadp tab OllyFixes array
+	// initialize the gettickcount option
+	GetTickCountOpt.GetTickCountPatchType = NOCOUNTER;
+
+	strcpy_s(aadpTricks[SIZEAADBTRICKSARRAY].functionName, MAX_PATH, "hd_GetTickCount");
+	aadpTricks[SIZEAADBTRICKSARRAY].functionState = FALSE;
+	aadpTricks[SIZEAADBTRICKSARRAY].functionId = CHECK_GETTICKCOUNT;
+	aadpTricks[SIZEAADBTRICKSARRAY].Reserved = &GetTickCountOpt;
+
+	//((GETTICKCOUNTOPTION*)(aadpTricks[SIZEAADBTRICKSARRAY+1].Reserved))->GetTickCountPathType = NOCOUNTER;
+
+
+	 // initialize the aadp tab OllyFixes array
 	for(i = 0; i < SIZEOLLYFIXESARRAY; i++)
 	{
 		ollyFixes[i].functionState = FALSE;
@@ -67,55 +98,136 @@ void InitGlobalArrays(void)
 		strcpy_s(aadpSettings[i].functionName, MAX_PATH, TabOllySettingsFuncNames[i]);
 	}
 }
+void SetRadioBtOption(HWND hWin, int PatchType)
+{
+	switch(PatchType)
+	{
+		case NOCOUNTER:
+			CheckRadioButton(hWin, RADIO_NOCOUNTER, RADIO_RANDOMCOUNTER, RADIO_NOCOUNTER);
+			break;
+						
+		case COUNTERPLUSONE: 
+			CheckRadioButton(hWin, RADIO_NOCOUNTER, RADIO_RANDOMCOUNTER, RADIO_COUNTERPLUSONE);
+			break;
+
+		case RANDOMCOUNTER:
+			CheckRadioButton(hWin, RADIO_NOCOUNTER, RADIO_RANDOMCOUNTER, RADIO_RANDOMCOUNTER);
+			break;
+	}
+}
+
+void EnableRadioButtons(HWND hWin, int State)
+{
+	// Change radio buttons state
+	Button_Enable(hRadioNoCounter, (BOOL)State);
+	Button_Enable(hCounterPlusOne, (BOOL)State);
+	Button_Enable(hRandomCounter, (BOOL)State);
+}
+
+bool IsRadioButtonChecked(HWND hRadioBt)
+{
+	bool Checked = FALSE;
+
+	if(Button_GetCheck(hRadioBt) == BST_CHECKED)
+		Checked = TRUE;
+	return Checked;
+}
+
+void _CheckForOptions(HWND hWin, HMODULE hModule, int arraySize, PAADPTRICK tricks)
+{
+	int i, GtPatchType;
+
+	for(i = 0; i < arraySize; i++)
+	{
+		if(Pluginreadintfromini(hModule, tricks[i].functionName, CW_USEDEFAULT) == 1)
+		{
+				CheckDlgButton(hWin, tricks[i].functionId, BST_CHECKED);
+				tricks[i].functionState = TRUE;
+				
+				if(tricks[i].functionId == CHECK_GETTICKCOUNT)
+				{
+					GtPatchType = Pluginreadintfromini(hModule, "GtOpt", CW_USEDEFAULT);
+					SetRadioBtOption(hWin, GtPatchType);
+				}
+		}
+		else
+		{
+				CheckDlgButton(hWin, tricks[i].functionId, BST_UNCHECKED);
+				tricks[i].functionState = FALSE;
+
+				if(tricks[i].functionId == CHECK_GETTICKCOUNT)
+					EnableRadioButtons(hWin, 0);
+		}
+	}
+
+}
 
 void CheckForOptions(HWND hWin, int Tab)
 {
 	int i;
-	HMODULE hModule;
 
-	hModule = GetModuleHandleA("aadp4olly-v.0.3-win32.dll");
-	
 	switch(Tab)
 	{
 		case TABAADBTRICKS:
-			for(i = 0; i < SIZEAADBTRICKSARRAY; i++)
-			{
-				if(Pluginreadintfromini(hModule, aadpTricks[i].functionName, CW_USEDEFAULT) == 1)
-				{
-						CheckDlgButton(hWin, aadpTricks[i].functionId, BST_CHECKED);
-						aadpTricks[i].functionState = TRUE;
-				}
-				else
-				{
-						CheckDlgButton(hWin, aadpTricks[i].functionId, BST_UNCHECKED);
-						aadpTricks[i].functionState = TRUE;
-				}
-			}
+			_CheckForOptions(hWin, hModule, SIZEAADBTRICKSARRAY+1, aadpTricks);
 			break;
 
 		case TABOLLYFIXES:
+			_CheckForOptions(hWin, hModule, SIZEOLLYFIXESARRAY, ollyFixes);
 			break;
 
 		case TABADVSETTINGS:
+			_CheckForOptions(hWin, hModule, SIZEADVSETTINGSARRAY, aadpSettings);
 			break;
 
 		default: break;
 	}
 }
 
-void CheckForBSTChecked(HWND hw, DWORD ID, char* Key)
+int CheckForBSTChecked(HWND hw, DWORD ID, char* Key)
 {
+	int State;
+
 	if(IsDlgButtonChecked(hw, ID) == BST_CHECKED)
 	{
-		if(!Pluginwriteinttoini(GetModuleHandleA("aadp4olly-v.0.3-win32.dll"), Key, 1))
+		State = BST_CHECKED;
+		if(!Pluginwriteinttoini(hModule, Key, 1))
 			Addtolist(0, HIGHLIGHTED,"Could't write config to Ollydbg.ini");
+
+		// additional check for the gettickcount option
+		if(ID == CHECK_GETTICKCOUNT)
+		{
+			if(aadpTricks[SIZEAADBTRICKSARRAY].functionState == TRUE)
+			{
+				if(IsRadioButtonChecked(hRadioNoCounter))
+				{
+					((GETTICKCOUNTOPTION*)(aadpTricks[SIZEAADBTRICKSARRAY].Reserved))->GetTickCountPatchType = NOCOUNTER;
+				}
+				else
+				{
+					if(IsRadioButtonChecked(hCounterPlusOne))
+					{
+						((GETTICKCOUNTOPTION*)(aadpTricks[SIZEAADBTRICKSARRAY].Reserved))->GetTickCountPatchType = COUNTERPLUSONE;
+					}
+					else
+					{
+						((GETTICKCOUNTOPTION*)(aadpTricks[SIZEAADBTRICKSARRAY].Reserved))->GetTickCountPatchType = RANDOMCOUNTER;
+					}
+				}
+
+				if(!Pluginwriteinttoini(hModule, "GtOpt", ((GETTICKCOUNTOPTION*)(aadpTricks[SIZEAADBTRICKSARRAY].Reserved))->GetTickCountPatchType))
+					Addtolist(0, HIGHLIGHTED,"Could't write config to Ollydbg.ini");
+			}
+		}
 	}
 	else
 	{
-		if(!Pluginwriteinttoini(GetModuleHandleA("aadp4olly-v.0.3-win32.dll"), Key, 0))
+		State = BST_UNCHECKED;
+		if(!Pluginwriteinttoini(hModule, Key, 0))
 			Addtolist(0, HIGHLIGHTED,"Could't write config to Ollydbg.ini");
 	}
 
+	return State;
 }
 
 void SetOptions(HWND hWin, int Tab)
@@ -124,14 +236,18 @@ void SetOptions(HWND hWin, int Tab)
 	switch(Tab)
 	{
 		case TABAADBTRICKS:
-			for(count = 0; count < SIZEAADBTRICKSARRAY; count++)
-				CheckForBSTChecked(hWin, aadpTricks[count].functionId, aadpTricks[count].functionName);
+			for(count = 0; count < SIZEAADBTRICKSARRAY+1; count++)
+				aadpTricks[count].functionState = CheckForBSTChecked(hWin, aadpTricks[count].functionId, aadpTricks[count].functionName);
 			break;
 
 		case TABOLLYFIXES:
+			for(count = 0; count < SIZEOLLYFIXESARRAY; count++)
+				ollyFixes[count].functionState = CheckForBSTChecked(hWin, ollyFixes[count].functionId, ollyFixes[count].functionName);
 			break;
 
 		case TABADVSETTINGS:
+			for(count = 0; count < SIZEADVSETTINGSARRAY; count++)
+				aadpSettings[count].functionState = CheckForBSTChecked(hWin, aadpSettings[count].functionId, aadpSettings[count].functionName);
 			break;
 
 		default: break;
@@ -145,10 +261,11 @@ void UI_CheckAllOptions(HWND hw, int State, int Tab)
 	switch(Tab)
 	{
 		case TABAADBTRICKS:
-			for(count = 0; count < SIZEAADBTRICKSARRAY; count++)
+			for(count = 0; count < SIZEAADBTRICKSARRAY+1; count++)
 			{
 				aadpTricks[count].functionState = State;
 				CheckDlgButton(hw, aadpTricks[count].functionId, State);
+				EnableRadioButtons(hw, State);
 			}
 			break;
 
@@ -175,9 +292,118 @@ void UI_CheckAllOptions(HWND hw, int State, int Tab)
 void DestroyGlobalHandles(void)
 {
 	// Destroy controls handles
-	CloseHandle(hRadioNoCounter);
-	CloseHandle(hCounterPlusOne);
-	CloseHandle(hRandomCounter);
+	//CloseHandle(hRadioNoCounter);
+	//CloseHandle(hCounterPlusOne);
+	//CloseHandle(hRandomCounter);
+}
+
+bool _AreAllOptionsEnabled(PAADPTRICK tricks, int arraySize)
+{
+	bool AllActive = TRUE;
+	int i;
+
+	for(i = 0; i < arraySize; i++)
+	{
+		if(tricks[i].functionState != TRUE)
+		{
+			AllActive = FALSE;
+			break;
+		}
+	}
+	return AllActive;
+}
+
+bool AreAllOptionsEnabled(int Tab)
+{
+	bool AllActive = FALSE;
+
+	switch(Tab)
+	{
+		case TABAADBTRICKS: 
+			AllActive = _AreAllOptionsEnabled(aadpTricks, SIZEAADBTRICKSARRAY+1); 
+			break;
+
+		case TABOLLYFIXES: 
+			AllActive = _AreAllOptionsEnabled(ollyFixes, SIZEOLLYFIXESARRAY); 
+			break;
+
+		case TABADVSETTINGS: 
+			AllActive = _AreAllOptionsEnabled(aadpSettings, SIZEADVSETTINGSARRAY); 
+			break;
+
+		default: break;
+	}
+	return AllActive;
+}
+
+int GetControlIdInArray(int ControlId, PAADPTRICK TricksArray, int ArraySize)
+{
+	int i, Index = -1;
+	for(i = 0; i < ArraySize; i++)
+		if(TricksArray[i].functionId == ControlId)
+		{
+			Index = i;
+			break;
+		}
+	return Index;
+}
+
+void HandleChecks(HWND hWin, WPARAM wParam, int Tab)
+{
+	int Index, bId, checkId;
+	unsigned int a, b;
+	
+	bId = WORD(wParam & 0xffff);
+	
+	switch(Tab)
+	{
+		case TABAADBTRICKS: 
+			Index = GetControlIdInArray(bId, aadpTricks, SIZEAADBTRICKSARRAY+1);
+			checkId = CHECK_SELECTALL;
+			break;
+
+		case TABOLLYFIXES: 
+			Index = GetControlIdInArray(bId, ollyFixes, SIZEOLLYFIXESARRAY);
+			checkId = CHECK_TABFIXES_SELECTALL;
+			break;
+
+		case TABADVSETTINGS: 
+			Index = GetControlIdInArray(bId, aadpSettings, SIZEADVSETTINGSARRAY);
+			checkId = CHECK_TABADVSETTINGS_SELECTALL;
+			break;
+	}
+
+	b = IsDlgButtonChecked(hWin, checkId);
+	a = IsDlgButtonChecked(hWin, bId);
+
+	if(a == BST_UNCHECKED && b == BST_CHECKED)
+	{
+		CheckDlgButton(hWin, checkId, BST_UNCHECKED);
+
+		switch(Tab)
+		{
+			// update the state of the control in the corresponding array
+			case TABAADBTRICKS: aadpTricks[Index].functionState = FALSE; break;
+			case TABOLLYFIXES: ollyFixes[Index].functionState = FALSE; break;
+			case TABADVSETTINGS: aadpSettings[Index].functionState = FALSE; break;
+		}
+	}
+	else
+	{
+		if(a == BST_CHECKED)
+		{
+			switch(Tab)
+			{
+				// update the state of the control in the corresponding array
+				case TABAADBTRICKS: aadpTricks[Index].functionState = TRUE; break;
+				case TABOLLYFIXES: ollyFixes[Index].functionState = TRUE; break;
+				case TABADVSETTINGS: aadpSettings[Index].functionState = TRUE; break;
+			}
+
+			if(AreAllOptionsEnabled(Tab))					
+				CheckDlgButton(hWin, checkId, BST_CHECKED);
+		}
+	}
 }
 
 LRESULT CALLBACK aadp4Ollyproc(HWND hw,UINT msg,WPARAM wp,LPARAM lp) {
@@ -210,18 +436,16 @@ LRESULT CALLBACK aadp4Ollyproc(HWND hw,UINT msg,WPARAM wp,LPARAM lp) {
 	// Bring window of tab1 to front
 	TabToFront(MainTabDlgHwnd, Index);
 	
-	CheckForOptions(AadbgTricksDlgHwnd, TABAADBTRICKS);
-
 	return 1;
 
   case WM_NOTIFY:
 	switch(((NMHDR *)lp)->code)
 	{
-	case TCN_SELCHANGE: // Get currently selected tab window to front
-		TabToFront(MainTabDlgHwnd, -1);
-		break;
-	default:
-		return false;
+		case TCN_SELCHANGE: // Get currently selected tab window to front
+			TabToFront(MainTabDlgHwnd, -1);
+			break;
+
+		default: return false;
 	}
 	break;
 
@@ -230,6 +454,8 @@ LRESULT CALLBACK aadp4Ollyproc(HWND hw,UINT msg,WPARAM wp,LPARAM lp) {
     {
     case IDOK:
 		SetOptions(AadbgTricksDlgHwnd, TABAADBTRICKS);
+		SetOptions(OllyFixesDlgHwnd, TABOLLYFIXES);
+		SetOptions(SettingsDlgHwnd, TABADVSETTINGS);
 		EndDialog(hw, 0);
 		return 0;
 
@@ -256,11 +482,23 @@ LRESULT CALLBACK aadp4Ollyproc(HWND hw,UINT msg,WPARAM wp,LPARAM lp) {
 
 INT_PTR CALLBACK OllyFixesDlgHandlerTabHandler(HWND hWin, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-int State;
+	int State;
 
 	switch(uMsg)
 	{
+		case WM_INITDIALOG:
+			CheckForOptions(hWin, TABOLLYFIXES);
+
+			if(AreAllOptionsEnabled(TABOLLYFIXES))
+				CheckDlgButton(hWin, CHECK_TABFIXES_SELECTALL, BST_CHECKED);
+			else
+				CheckDlgButton(hWin, CHECK_TABFIXES_SELECTALL, BST_UNCHECKED);
+
+			return 1;
+
 		case WM_COMMAND:
+			HandleChecks(hWin, wParam, TABOLLYFIXES);
+
 			switch(LOWORD(wParam))
 			{
 				case CHECK_TABFIXES_SELECTALL:
@@ -270,6 +508,9 @@ int State;
 
 				default: break;
 			}
+			break;
+
+		case WM_DESTROY:
 			break;
 
 		default:
@@ -289,6 +530,9 @@ int Index;
 		case WM_COMMAND:
 			break;
 
+		case WM_DESTROY:
+			break;
+
 		default:
 			return false;
 	}
@@ -302,7 +546,19 @@ INT_PTR CALLBACK SettingsDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wParam, LPAR
 
 	switch(uMsg)
 	{
+		case WM_INITDIALOG:
+			CheckForOptions(hWin, TABADVSETTINGS);
+
+			if(AreAllOptionsEnabled(TABADVSETTINGS))
+				CheckDlgButton(hWin, CHECK_TABADVSETTINGS_SELECTALL, BST_CHECKED);
+			else
+				CheckDlgButton(hWin, CHECK_TABADVSETTINGS_SELECTALL, BST_UNCHECKED);
+
+			return 1;
+
 		case WM_COMMAND:
+			HandleChecks(hWin, wParam, TABADVSETTINGS);
+
 			switch(LOWORD(wParam))
 			{
 				case CHECK_TABADVSETTINGS_SELECTALL:
@@ -312,6 +568,9 @@ INT_PTR CALLBACK SettingsDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wParam, LPAR
 
 				default: break;
 			}
+			break;
+
+		case WM_DESTROY:
 			break;
 
 		default:
@@ -358,6 +617,9 @@ INT_PTR CALLBACK CustomHideSettingsDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wP
 			}
 			break;
 
+		case WM_DESTROY:
+			break;
+
 		default:
 			return false;
 	}
@@ -372,43 +634,32 @@ void GetRadioBtHandles(HWND hWin)
 	hRandomCounter = GetDlgItem(hWin, RADIO_RANDOMCOUNTER);
 }
 
-void HandleGetTickCountBt(HWND hWin, int State)
-{
-	// Change checkbox's state
-	CheckDlgButton(hWin, CHECK_GETTICKCOUNT, State);
-
-	// Change radio buttons state
-	Button_Enable(hRadioNoCounter, (BOOL)State);
-	Button_Enable(hCounterPlusOne, (BOOL)State);
-	Button_Enable(hRandomCounter, (BOOL)State);
-
-	// Set the default option
-	CheckRadioButton(hWin, RADIO_NOCOUNTER, RADIO_RANDOMCOUNTER, RADIO_NOCOUNTER);
-}
-
 INT_PTR CALLBACK AadbgTricksDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-HWND TabWindow;
-int State;
+	int State, GtPatchType;
 
 	switch(uMsg)
 	{
 		case WM_INITDIALOG:
-			// We handle the radio button state by separated
 			GetRadioBtHandles(hWin);
 
-			// Handle the current state
-			State = IsDlgButtonChecked(hWin, CHECK_GETTICKCOUNT);
-			HandleGetTickCountBt(hWin, State);
+			CheckForOptions(hWin, TABAADBTRICKS);
+
+			if(AreAllOptionsEnabled(TABAADBTRICKS))
+				CheckDlgButton(hWin, CHECK_SELECTALL, BST_CHECKED);
+			else
+				CheckDlgButton(hWin, CHECK_SELECTALL, BST_UNCHECKED);
+
 			return 1;
 
 		case WM_COMMAND:
+			HandleChecks(hWin, wParam, TABAADBTRICKS);
+
 			switch(LOWORD(wParam))
 			{
 				case CHECK_SELECTALL:
 					// Get the state of the CHECK_ALL button
 					State = IsDlgButtonChecked(hWin, CHECK_SELECTALL);
-					HandleGetTickCountBt(hWin, State);
 					
 					// Handle the remaining checkboxes
 					UI_CheckAllOptions(hWin, State, TABAADBTRICKS);
@@ -416,7 +667,18 @@ int State;
 
 				case CHECK_GETTICKCOUNT:
 					State = IsDlgButtonChecked(hWin, CHECK_GETTICKCOUNT);
-					HandleGetTickCountBt(hWin, State);
+					EnableRadioButtons(hWin, State);
+
+					if(State)
+					{
+						aadpTricks[SIZEAADBTRICKSARRAY].functionState = TRUE;
+						SetRadioBtOption(hWin, Pluginreadintfromini(hModule, "GtOpt", CW_USEDEFAULT));
+					}
+					else
+					{
+						aadpTricks[SIZEAADBTRICKSARRAY].functionState = FALSE;
+					}
+
 					break;
 			}
 			break;
@@ -458,6 +720,9 @@ extc int _export cdecl ODBG_Plugininit(int ollydbgversion,HWND hw,ulong *feature
 	InitGlobalArrays();
 
 	CheckForOptions(AadbgTricksDlgHwnd, TABAADBTRICKS);
+	//CheckForOptions(OllyFixesDlgHwnd, TABOLLYFIXES);
+	//CheckForOptions(CustomSettingsDlgHwnd, TABADVSETTINGS);
+	//CheckForOptions();
 	return 0;
 
 }
@@ -600,6 +865,9 @@ extc int _export cdecl ODBG_Pluginshortcut(int origin,int ctrl,int alt,int shift
 	  {
 		Createaadp4ollywindow();
 		CheckForOptions(AadbgTricksDlgHwnd, TABAADBTRICKS);
+		//CheckForOptions(OllyFixesDlgHwnd, TABOLLYFIXES);
+		//CheckForOptions(CustomSettingsDlgHwnd, TABADVSETTINGS);
+
 		return 1;
 	  }                   
   }
@@ -612,18 +880,23 @@ extc void _export cdecl ODBG_Pluginaction(int origin,int action,void *item) {
 
   switch (action) {
     case 0:
-      Createaadp4ollywindow();
-	  CheckForOptions(AadbgTricksDlgHwnd, TABAADBTRICKS);
+		Createaadp4ollywindow();
+		//CheckForOptions(AadbgTricksDlgHwnd, TABAADBTRICKS);
+		//CheckForOptions(OllyFixesDlgHwnd, TABOLLYFIXES);
+		//CheckForOptions(CustomSettingsDlgHwnd, TABADVSETTINGS);
       break;
+
     case 1:
 		ShellExecuteA(NULL, "open", "http://code.google.com/p/aadp", 0, 0, SW_SHOWNORMAL);
       break;
+
 	case 2: MessageBox(hwmain, TEXT("UPDATE!"), TEXT("UPDATE!"), MB_OK); break;
     case 3:
       MessageBoxA(hwmain,
 		  "aadp4olly plugin v0.3\nWritten by +NCR/CRC! [ReVeRsEr]",
         "aadp4olly", MB_OK|MB_ICONINFORMATION);
       break;
+
     default: break;
   };
 }
@@ -635,4 +908,7 @@ extc int _export cdecl ODBG_Pluginclose(void) {
 extc void _export cdecl ODBG_Pluginreset(void) {
 	Flag = 0;
 	CheckForOptions(AadbgTricksDlgHwnd, TABAADBTRICKS);
+	//CheckForOptions(OllyFixesDlgHwnd, TABOLLYFIXES);
+	//CheckForOptions(CustomSettingsDlgHwnd, TABADVSETTINGS);
+
 }

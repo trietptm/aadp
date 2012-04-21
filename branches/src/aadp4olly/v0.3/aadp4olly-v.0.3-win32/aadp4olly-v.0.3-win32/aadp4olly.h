@@ -57,11 +57,22 @@
 #define SIZEOLLYFIXESARRAY	5
 #define SIZEADVSETTINGSARRAY 12
 
-typedef struct _AADPTRICK {
+#define NOCOUNTER 1
+#define COUNTERPLUSONE 2
+#define RANDOMCOUNTER 3
+
+typedef struct _AADPTRICK 
+{
 	char functionName[MAX_PATH];
 	int functionId;
-	int functionState;
+	bool functionState;
+	void* Reserved;
 } AADPTRICK, *PAADPTRICK;
+
+typedef struct _GETTICKCOUNTOPTION
+{
+	int GetTickCountPatchType;
+} GETTICKCOUNTOPTION, *PGETTICKCOUNTOPTION;
 
 /* Function prototypes */
 INT_PTR CALLBACK AadbgTricksDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wParam, LPARAM lParam);
