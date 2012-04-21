@@ -65,7 +65,7 @@ typedef struct _AADPTRICK
 {
 	char functionName[MAX_PATH];
 	int functionId;
-	bool functionState;
+	int functionState;
 	void* Reserved;
 } AADPTRICK, *PAADPTRICK;
 
