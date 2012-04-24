@@ -27,22 +27,6 @@
 
 #include "aadp4olly.h"
 
-static HINSTANCE hinst;            
-static HWND      hwmain;
-static HWND      hwcmd;  
-
-HWND hwPluginWin;
-
-int Flag = 0;
-
-// the additional element is to hold the GetTickCount option
-AADPTRICK aadpTricks[SIZEAADBTRICKSARRAY+1];
-AADPTRICK ollyFixes[SIZEOLLYFIXESARRAY];
-AADPTRICK aadpSettings[SIZEADVSETTINGSARRAY];
-GETTICKCOUNTOPTION GetTickCountOpt;
-
-HMODULE hModule = GetModuleHandleA("aadp4olly-v.0.3-win32.dll");
-
 void _InitGlobalArray(PAADPTRICK tricks, int arraySize, int sourceArrayIds[], char* sourceArrayNames[])
 {
 	int i;
@@ -164,8 +148,6 @@ void _CheckForOptions(HWND hWin, HMODULE hModule, int arraySize, PAADPTRICK tric
 
 void CheckForOptions(HWND hWin, int Tab)
 {
-	int i;
-
 	switch(Tab)
 	{
 		case TABAADBTRICKS:
@@ -254,7 +236,7 @@ void SetOptions(HWND hWin, int Tab)
 	}
 }
 
-void UI_CheckAllOptions(HWND hw, int State, int Tab)
+void UI_CheckAllOptions(HWND hWin, int State, int Tab)
 {
 	int count;
 
@@ -264,8 +246,8 @@ void UI_CheckAllOptions(HWND hw, int State, int Tab)
 			for(count = 0; count < SIZEAADBTRICKSARRAY+1; count++)
 			{
 				aadpTricks[count].functionState = State;
-				CheckDlgButton(hw, aadpTricks[count].functionId, State);
-				EnableRadioButtons(hw, State);
+				CheckDlgButton(hWin, aadpTricks[count].functionId, State);
+				EnableRadioButtons(hWin, State);
 			}
 			break;
 
@@ -273,7 +255,7 @@ void UI_CheckAllOptions(HWND hw, int State, int Tab)
 			for(count = 0; count < SIZEOLLYFIXESARRAY; count++)
 			{
 				ollyFixes[count].functionState = State;
-				CheckDlgButton(hw, ollyFixes[count].functionId, State);
+				CheckDlgButton(hWin, ollyFixes[count].functionId, State);
 			}
 			break;
 
@@ -281,7 +263,7 @@ void UI_CheckAllOptions(HWND hw, int State, int Tab)
 			for(count = 0; count < SIZEADVSETTINGSARRAY; count++)
 			{
 				aadpSettings[count].functionState = State;
-				CheckDlgButton(hw, aadpSettings[count].functionId, State);
+				CheckDlgButton(hWin, aadpSettings[count].functionId, State);
 			}
 			break;
 
@@ -292,9 +274,9 @@ void UI_CheckAllOptions(HWND hw, int State, int Tab)
 void DestroyGlobalHandles(void)
 {
 	// Destroy controls handles
-	//CloseHandle(hRadioNoCounter);
-	//CloseHandle(hCounterPlusOne);
-	//CloseHandle(hRandomCounter);
+	CloseHandle(hRadioNoCounter);
+	CloseHandle(hCounterPlusOne);
+	CloseHandle(hRandomCounter);
 }
 
 bool _AreAllOptionsEnabled(PAADPTRICK tricks, int arraySize)
@@ -409,21 +391,21 @@ void HandleChecks(HWND hWin, WPARAM wParam, int Tab)
 	}
 }
 
-LRESULT CALLBACK aadp4Ollyproc(HWND hw,UINT msg,WPARAM wp,LPARAM lp) {
-  hwPluginWin = hw;
+LRESULT CALLBACK aadp4Ollyproc(HWND hWin,UINT msg,WPARAM wp,LPARAM lp) {
+  hwPluginWin = hWin;
   int Index;
 
   switch(msg)
   {
   case WM_INITDIALOG:
 
-	AadbgTricksDlgHwnd = CreateDialog(hinst, MAKEINTRESOURCE(ANTIDBGTRICKS), hw, &AadbgTricksDlgTabHandler);
-	OllyFixesDlgHwnd = CreateDialog(hinst, MAKEINTRESOURCE(OLLYFIXES), hw, &OllyFixesDlgHandlerTabHandler);
-	SettingsDlgHwnd = CreateDialog(hinst, MAKEINTRESOURCE(ADVANCEDSETTINGS), hw, &SettingsDlgTabHandler);
-	CustomSettingsDlgHwnd = CreateDialog(hinst, MAKEINTRESOURCE(CUSTOMHIDESETTINGSDLG), hw, &CustomHideSettingsDlgTabHandler);
-	AboutDlgHwnd = CreateDialog(hinst, MAKEINTRESOURCE(ABOUT), hw, &AboutDlgHandler);
+	AadbgTricksDlgHwnd = CreateDialog(hinst, MAKEINTRESOURCE(ANTIDBGTRICKS), hWin, &AadbgTricksDlgTabHandler);
+	OllyFixesDlgHwnd = CreateDialog(hinst, MAKEINTRESOURCE(OLLYFIXES), hWin, &OllyFixesDlgHandlerTabHandler);
+	SettingsDlgHwnd = CreateDialog(hinst, MAKEINTRESOURCE(ADVANCEDSETTINGS), hWin, &SettingsDlgTabHandler);
+	CustomSettingsDlgHwnd = CreateDialog(hinst, MAKEINTRESOURCE(CUSTOMHIDESETTINGSDLG), hWin, &CustomHideSettingsDlgTabHandler);
+	AboutDlgHwnd = CreateDialog(hinst, MAKEINTRESOURCE(ABOUT), hWin, &AboutDlgHandler);
 
-	MainTabDlgHwnd = GetDlgItem(hw, IDC_TAB1);
+	MainTabDlgHwnd = GetDlgItem(hWin, IDC_TAB1);
 
 	// Add tab to existing ones (currently index 0)
 	AddTab(MainTabDlgHwnd, CustomSettingsDlgHwnd, "Custom Hide Settings", 3);
@@ -459,8 +441,9 @@ LRESULT CALLBACK aadp4Ollyproc(HWND hw,UINT msg,WPARAM wp,LPARAM lp) {
 		SetOptions(AadbgTricksDlgHwnd, TABAADBTRICKS);
 		SetOptions(OllyFixesDlgHwnd, TABOLLYFIXES);
 		SetOptions(SettingsDlgHwnd, TABADVSETTINGS);
-		EndDialog(hw, 0);
-		return 0;
+
+		EndDialog(hWin, 0);
+		//return 0;
 
     case IDCANCEL:
 		// Tab clean-up
@@ -474,10 +457,10 @@ LRESULT CALLBACK aadp4Ollyproc(HWND hw,UINT msg,WPARAM wp,LPARAM lp) {
 		DestroyWindow(AboutDlgHwnd);
 
 		// Destroy all global handles
-		DestroyGlobalHandles();
+		//DestroyGlobalHandles();
 
 		// Destroy the modal dialog
-		EndDialog(hw, 0);
+		EndDialog(hWin, 0);
     }
   }
   return 0;
@@ -500,7 +483,12 @@ INT_PTR CALLBACK OllyFixesDlgHandlerTabHandler(HWND hWin, UINT uMsg, WPARAM wPar
 			return 1;
 
 		case WM_COMMAND:
-			HandleChecks(hWin, wParam, TABOLLYFIXES);
+			/* Fix: HandleChecks() was returning -1 because it receives an ID not found in the 
+			array. The ID was from the select all checkbox. So, there was an integrer overflow indexing
+			the array and overwriting the hWin variable. Due this, I moved the HandleChecks() call to the default
+			case in the switch. Thanks to marciano for his help with this fix.
+			*/
+			//HandleChecks(hWin, wParam, TABOLLYFIXES);
 
 			switch(LOWORD(wParam))
 			{
@@ -509,7 +497,8 @@ INT_PTR CALLBACK OllyFixesDlgHandlerTabHandler(HWND hWin, UINT uMsg, WPARAM wPar
 					UI_CheckAllOptions(hWin, State, TABOLLYFIXES);
 					break;
 
-				default: break;
+				default: HandleChecks(hWin, wParam, TABOLLYFIXES);
+					break;
 			}
 			break;
 
@@ -525,9 +514,6 @@ INT_PTR CALLBACK OllyFixesDlgHandlerTabHandler(HWND hWin, UINT uMsg, WPARAM wPar
 
 INT_PTR CALLBACK AboutDlgHandler(HWND Window, UINT Message, WPARAM wParam, LPARAM lParam)
 {
-HWND TabWindow;
-int Index;
-
 	switch(Message)
 	{
 		case WM_COMMAND:
@@ -560,7 +546,12 @@ INT_PTR CALLBACK SettingsDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wParam, LPAR
 			return 1;
 
 		case WM_COMMAND:
-			HandleChecks(hWin, wParam, TABADVSETTINGS);
+			/* Fix: HandleChecks() was returning -1 because it receives an ID not found in the 
+			array. The ID was from the select all checkbox. So, there was an integrer overflow indexing
+			the array and overwriting the hWin variable. Due this, I moved the HandleChecks() call to the default
+			case in the switch. Thanks to marciano for his help with this fix.
+			*/
+			//HandleChecks(hWin, wParam, TABADVSETTINGS);
 
 			switch(LOWORD(wParam))
 			{
@@ -569,7 +560,8 @@ INT_PTR CALLBACK SettingsDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wParam, LPAR
 					UI_CheckAllOptions(hWin, State, TABADVSETTINGS);
 					break;
 
-				default: break;
+				default: HandleChecks(hWin, wParam, TABADVSETTINGS); 
+					break;
 			}
 			break;
 
@@ -639,7 +631,7 @@ void GetRadioBtHandles(HWND hWin)
 
 INT_PTR CALLBACK AadbgTricksDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	int State, GtPatchType;
+	int State;
 
 	switch(uMsg)
 	{
@@ -656,7 +648,12 @@ INT_PTR CALLBACK AadbgTricksDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wParam, L
 			return 1;
 
 		case WM_COMMAND:
-			HandleChecks(hWin, wParam, TABAADBTRICKS);
+			/* Fix: HandleChecks() was returning -1 because it receives an ID not found in the 
+			array. The ID was from the select all checkbox. So, there was an integrer overflow indexing
+			the array and overwriting the hWin variable. Due this, I moved the HandleChecks() call to the default
+			case in the switch. Thanks to marciano for his help with this fix.
+			*/
+			//HandleChecks(hWin, wParam, TABAADBTRICKS);
 
 			switch(LOWORD(wParam))
 			{
@@ -683,11 +680,13 @@ INT_PTR CALLBACK AadbgTricksDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wParam, L
 					}
 
 					break;
+
+				default: HandleChecks(hWin, wParam, TABAADBTRICKS);
+					break;
 			}
 			break;
 
-		default:
-			return false;
+		default: return false;
 	}
 
 	return true;
@@ -695,7 +694,7 @@ INT_PTR CALLBACK AadbgTricksDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wParam, L
 
 static void Createaadp4ollywindow(void) {
   InitCommonControls();
-  DialogBoxParamA(hinst, (LPCSTR)IDD_AADP4OLLY, hwmain, (DLGPROC)aadp4Ollyproc, 0);
+  DialogBoxParamA(hinst, (LPCSTR)IDD_AADP4OLLY, (HWND)_Plugingetvalue(VAL_HWMAIN), (DLGPROC)aadp4Ollyproc, 0);
 
 }
 
@@ -712,7 +711,7 @@ extc int _export cdecl ODBG_Plugindata(char shortname[32]) {
 
 extc int _export cdecl ODBG_Plugininit(int ollydbgversion,HWND hw,ulong *features){
 	
-	hwmain = hw;
+	//hwmain = hw;
 
 	if (ollydbgversion < PLUGIN_VERSION)
 		return -1;
@@ -867,7 +866,7 @@ extc int _export cdecl ODBG_Pluginshortcut(int origin,int ctrl,int alt,int shift
 	  if (ctrl==0 && alt==1 && shift==0 && key=='Q') 
 	  {
 		Createaadp4ollywindow();
-		CheckForOptions(AadbgTricksDlgHwnd, TABAADBTRICKS);
+		//CheckForOptions(AadbgTricksDlgHwnd, TABAADBTRICKS);
 		//CheckForOptions(OllyFixesDlgHwnd, TABOLLYFIXES);
 		//CheckForOptions(CustomSettingsDlgHwnd, TABADVSETTINGS);
 
@@ -893,9 +892,11 @@ extc void _export cdecl ODBG_Pluginaction(int origin,int action,void *item) {
 		ShellExecuteA(NULL, "open", "http://code.google.com/p/aadp", 0, 0, SW_SHOWNORMAL);
       break;
 
-	case 2: MessageBox(hwmain, TEXT("UPDATE!"), TEXT("UPDATE!"), MB_OK); break;
+	case 2: MessageBox((HWND)_Plugingetvalue(VAL_HWMAIN), TEXT("UPDATE!"), TEXT("UPDATE!"), MB_OK); 
+		break;
+
     case 3:
-      MessageBoxA(hwmain,
+      MessageBoxA((HWND)_Plugingetvalue(VAL_HWMAIN),
 		  "aadp4olly plugin v0.3\nWritten by +NCR/CRC! [ReVeRsEr]",
         "aadp4olly", MB_OK|MB_ICONINFORMATION);
       break;
