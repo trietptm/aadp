@@ -81,8 +81,20 @@ INT_PTR CALLBACK SettingsDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wParam, LPAR
 INT_PTR CALLBACK CustomHideSettingsDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wParam, LPARAM lParam);
 INT_PTR CALLBACK AboutDlgHandler(HWND hWin, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
+AADPTRICK aadpTricks[SIZEAADBTRICKSARRAY+1];
+AADPTRICK ollyFixes[SIZEOLLYFIXESARRAY];
+AADPTRICK aadpSettings[SIZEADVSETTINGSARRAY];
+GETTICKCOUNTOPTION GetTickCountOpt;
+
 /* Global variables declaration */
-HWND hRadioNoCounter = NULL, hCounterPlusOne = NULL, hRandomCounter = NULL, hConfigLb = NULL;
+int Flag = 0;
+
+HINSTANCE hinst;
+
+// the additional element is to hold the GetTickCount option
+HMODULE hModule = GetModuleHandleA("aadp4olly-v.0.3-win32.dll");
+
+HWND hwcmd, hwPluginWin, hRadioNoCounter = NULL, hCounterPlusOne = NULL, hRandomCounter = NULL, hConfigLb = NULL;
 HWND MainTabDlgHwnd, AadbgTricksDlgHwnd, OllyFixesDlgHwnd, SettingsDlgHwnd, CustomSettingsDlgHwnd, AboutDlgHwnd;
 
 int TabAadbTricksControlsId[SIZEAADBTRICKSARRAY] = {CHECK_RDTSC, CHECK_BEINGDEBUGGED, CHECK_FORCEFLAGS, CHECK_SETINFOTHREAD,
