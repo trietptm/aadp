@@ -30,6 +30,7 @@
 #include <tchar.h>
 #include <Strsafe.h>
 #include <Windowsx.h>
+#include <Shlwapi.h>
 
 #include "resources\\resource.h"
 #include "external\\plugin.h"
@@ -38,10 +39,18 @@
 
 /* Additional libraries declaration */
 #pragma comment(lib, "comctl32.lib")
+#pragma comment(lib, "Shlwapi.lib")
+
 #pragma comment(lib, "external\\OLLYDBG.LIB")
 #pragma comment(lib, "aadlib\\aadlib-v0.2-win32.lib")
 
 /* Constants declaration */
+#define MAX_BYTES 4096
+
+#define RTN_OK 1
+#define RTN_USAGE 0
+#define RTN_ERROR 13
+
 #define VERSIONHI		1
 #define VERSIONLO		10
 #define HIGHLIGHTED		1
@@ -60,6 +69,8 @@
 #define NOCOUNTER 1
 #define COUNTERPLUSONE 2
 #define RANDOMCOUNTER 3
+
+#define USEDEFAULT 0x80000000
 
 typedef struct _AADPTRICK 
 {
@@ -120,3 +131,5 @@ char* TabOllyFixesFuncNames[SIZEOLLYFIXESARRAY] = {"hd_FixFldz", "hd_FixFuistq",
 char* TabOllySettingsFuncNames[SIZEADVSETTINGSARRAY] = {"hd_EnableCtrlG", "hd_SkipEpOutsideCode", "hd_SkipMorePatches", 
 "hd_SkipCompressedCode", "hd_SkipLoadDll", "hd_MaximizeOlly", "hd_MaximizeChilds", "hd_SkipSomeExceptions", "hd_EnableRealTimePatching", 
 "hd_BreakOnTls", "hd_AntiAntiAttach", "hd_EnableSingleStep"};
+
+char aadpPathToConfigFile[MAX_PATH] = {0};

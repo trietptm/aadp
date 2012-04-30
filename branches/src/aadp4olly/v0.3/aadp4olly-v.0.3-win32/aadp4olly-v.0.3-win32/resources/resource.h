@@ -14,6 +14,7 @@
 #define IDC_TAB1                                1000
 #define LB_CONFIGLIST                           1000
 #define CHECK_FIXFUISTQ                         1001
+#define STATIC_CURRENTCONFIG                    1001
 #define CHECK_FIXNUMBEROFRVA                    1002
 #define CHECK_FIXFORMATSTRING                   1003
 #define CHECK_FIXANALYSISCRASH                  1004
@@ -55,6 +56,5 @@
 #define CHECK_ANTIANTIATTACH                    1049
 #define CHECK_SINGLESTEPCOMPATIBILITY           1050
 #define BT_APPLYCONFIG                          1052
-#define BT_ADDCONFIG                            1053
 #define BT_SAVECONFIG                           1055
 #define BT_REMOVEFROMCONFIGLIST                 1057

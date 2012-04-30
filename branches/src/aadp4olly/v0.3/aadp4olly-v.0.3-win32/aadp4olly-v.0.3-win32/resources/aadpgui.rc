@@ -106,13 +106,13 @@ FONT 8, "Ms Shell Dlg"
 {
     GROUPBOX        "Custom Hide Settings", IDC_STATIC, 7, 6, 300, 238
     EDITTEXT        EDIT_NAME, 18, 30, 227, 14, ES_AUTOHSCROLL
-    PUSHBUTTON      "Add", BT_ADDCONFIG, 250, 30, 50, 14
     GROUPBOX        "Choose a name for your set of options", IDC_STATIC, 13, 17, 290, 35
     LISTBOX         LB_CONFIGLIST, 18, 70, 281, 115, WS_TABSTOP | WS_VSCROLL | LBS_NOINTEGRALHEIGHT | LBS_EXTENDEDSEL | LBS_SORT | LBS_NOTIFY
     PUSHBUTTON      "Apply selected configuration", BT_APPLYCONFIG, 18, 188, 94, 14
     GROUPBOX        "Custom Hide Configurations", IDC_STATIC, 14, 58, 289, 155
     PUSHBUTTON      "Remove from list", BT_REMOVEFROMCONFIGLIST, 242, 189, 57, 14
-    PUSHBUTTON      "Save config.", BT_SAVECONFIG, 184, 189, 57, 14
+    PUSHBUTTON      "Save config.", BT_SAVECONFIG, 248, 30, 51, 14
+    LTEXT           "", STATIC_CURRENTCONFIG, 14, 217, 121, 16, SS_LEFT
 }
 
 
