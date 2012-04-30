@@ -27,6 +27,96 @@
 
 #include "aadp4olly.h"
 
+//BOOL SetPrivilege(
+//    HANDLE hToken,          // token handle
+//    LPCTSTR Privilege,      // Privilege to enable/disable
+//    BOOL bEnablePrivilege   // TRUE to enable.  FALSE to disable
+//	)
+//{
+//    TOKEN_PRIVILEGES tp;
+//    LUID luid;
+//    TOKEN_PRIVILEGES tpPrevious;
+//    DWORD cbPrevious=sizeof(TOKEN_PRIVILEGES);
+//
+//    if(!LookupPrivilegeValue( NULL, Privilege, &luid )) return FALSE;
+//
+//    // 
+//    // first pass.  get current privilege setting
+//    // 
+//    tp.PrivilegeCount           = 1;
+//    tp.Privileges[0].Luid       = luid;
+//    tp.Privileges[0].Attributes = 0;
+//
+//    AdjustTokenPrivileges(
+//            hToken,
+//            FALSE,
+//            &tp,
+//            sizeof(TOKEN_PRIVILEGES),
+//            &tpPrevious,
+//            &cbPrevious
+//            );
+//
+//    if (GetLastError() != ERROR_SUCCESS) return FALSE;
+//
+//    // 
+//    // second pass.  set privilege based on previous setting
+//    // 
+//    tpPrevious.PrivilegeCount       = 1;
+//    tpPrevious.Privileges[0].Luid   = luid;
+//
+//    if(bEnablePrivilege) {
+//        tpPrevious.Privileges[0].Attributes |= (SE_PRIVILEGE_ENABLED);
+//    }
+//    else {
+//        tpPrevious.Privileges[0].Attributes ^= (SE_PRIVILEGE_ENABLED &
+//            tpPrevious.Privileges[0].Attributes);
+//    }
+//
+//    AdjustTokenPrivileges(
+//            hToken,
+//            FALSE,
+//            &tpPrevious,
+//            cbPrevious,
+//            NULL,
+//            NULL
+//            );
+//
+//    if (GetLastError() != ERROR_SUCCESS) return FALSE;
+//
+//    return TRUE;
+//}
+//
+//int AdjustPrivileges(void)
+//{
+//	HANDLE hToken;
+//
+//    if(!OpenThreadToken(GetCurrentThread(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, FALSE, &hToken))
+//    {
+//        if(GetLastError() == ERROR_NO_TOKEN)
+//        {
+//            if(!ImpersonateSelf(SecurityImpersonation))
+//            return RTN_ERROR;
+//
+//            if(!OpenThreadToken(GetCurrentThread(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, FALSE, &hToken))
+//			{
+//                MessageBox(NULL, TEXT("OpenThreadToken error"), TEXT("Ups!"), MB_ICONERROR);
+//				return RTN_ERROR;
+//            }
+//         }
+//        else
+//			return RTN_ERROR;
+//     }
+//
+//	if(!SetPrivilege(hToken, SE_DEBUG_NAME, TRUE))
+//	{
+//        CloseHandle(hToken);
+//
+//        return RTN_ERROR;
+//    }
+//
+//	return RTN_OK;
+//}
+//
 void _InitGlobalArray(PAADPTRICK tricks, int arraySize, int sourceArrayIds[], char* sourceArrayNames[])
 {
 	int i;
@@ -82,6 +172,80 @@ void InitGlobalArrays(void)
 		strcpy_s(aadpSettings[i].functionName, MAX_PATH, TabOllySettingsFuncNames[i]);
 	}
 }
+
+int aadp_Readintfromini(char* ConfigName, char* Key, int DefValue)
+{
+	return 1;
+}
+
+int aadp_Readstringfromini(char* Key, char* OutputString, char* DefString)
+{
+	return 1;
+}
+
+HANDLE aadp_CreateConfigFile(HMODULE hMod)
+{
+	int DirLen, i;
+	HANDLE hFile;
+
+	GetModuleFileName(hMod, aadpPathToConfigFile, MAX_PATH);
+
+	DirLen = strlen(aadpPathToConfigFile);
+	i = DirLen;
+	while(aadpPathToConfigFile[i] != '\\')
+	{
+		aadpPathToConfigFile[i] = '\x00';
+		i--;
+	}
+
+	strcat_s(aadpPathToConfigFile, MAX_PATH, "aadp4ollyconfig.ini");
+
+	hFile = CreateFile(aadpPathToConfigFile, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if(GetLastError() == ERROR_FILE_NOT_FOUND)
+	{
+		hFile = CreateFile(aadpPathToConfigFile, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+		if(GetLastError() != ERROR_ALREADY_EXISTS)
+		{
+			return hFile;
+		}
+	}
+
+	return hFile;
+}
+
+int aadp_Writeinttoini(char* ConfigName, char* Key, int Value)
+{
+	char szValue[MAX_PATH];
+	return WritePrivateProfileString(ConfigName, Key, itoa(Value, szValue, 10), aadpPathToConfigFile);
+
+}
+
+void aadp_ListBox_AddData(HWND hListBox, char* Data)
+{
+	int dlen;
+
+	dlen = strlen(Data);
+	while(*Data != 0)
+	{
+		ListBox_AddString(hListBox, Data);
+		Data += dlen + 1;
+		dlen = strlen(Data);
+	}
+}
+
+int aadp_GetSectionNamesInIniFile(char* PathToIni, void* pBuffer, int BufferSize)
+{
+	/* If we call GetPrivateProfileString with AppName = NULL, then, it returns
+	all the section names in a list like this: SECTION1.SECTION2.SECTION3.SECTIONN being "."
+	the null terminator character.
+
+	See the "remarks" section in the GetPrivateProfileString documentation on MSDN:
+	http://msdn.microsoft.com/en-us/library/windows/desktop/ms724353%28v=vs.85%29.aspx
+	*/
+
+	return GetPrivateProfileString(NULL, "Current", NULL, (LPSTR)pBuffer, BufferSize, PathToIni);
+}
+
 void SetRadioBtOption(HWND hWin, int PatchType)
 {
 	switch(PatchType)
@@ -575,36 +739,118 @@ INT_PTR CALLBACK SettingsDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wParam, LPAR
 	return true;
 }
 
+void WriteAadpConfig(char* ConfigName)
+{
+	int i;
+
+	for(i = 0; i < SIZEAADBTRICKSARRAY; i++)
+		aadp_Writeinttoini(ConfigName, aadpTricks[i].functionName, aadpTricks[i].functionState);
+
+	for(i = 0; i < SIZEOLLYFIXESARRAY; i++)
+		aadp_Writeinttoini(ConfigName, ollyFixes[i].functionName, ollyFixes[i].functionState);
+
+	for(i = 0; i < SIZEADVSETTINGSARRAY; i++)
+		aadp_Writeinttoini(ConfigName, aadpSettings[i].functionName, aadpSettings[i].functionState);
+}
+
+void ReadAadpConfig(char* ConfigName)
+{
+	int i;
+
+	for(i = 0; i < SIZEAADBTRICKSARRAY; i++)
+		aadpTricks[i].functionState = aadp_Readintfromini(ConfigName, aadpTricks[i].functionName, USEDEFAULT);
+
+	for(i = 0; i < SIZEOLLYFIXESARRAY; i++)
+		ollyFixes[i].functionState = aadp_Readintfromini(ConfigName, ollyFixes[i].functionName, ollyFixes[i].functionState);
+
+	for(i = 0; i < SIZEADVSETTINGSARRAY; i++)
+		aadpSettings[i].functionState = aadp_Readintfromini(ConfigName, aadpSettings[i].functionName, aadpSettings[i].functionState);
+
+}
+
+int aadp_DeleteSectionFromIni(char* szAux, char* PathToIni)
+{
+	return WritePrivateProfileString(szAux, NULL, NULL, PathToIni);
+}
+
+bool Static_SetTxt(HWND hWin, int StaticId, char* szText)
+{
+	return SetDlgItemText(hWin, StaticId, szText);
+}
+
+bool aadp_GetCurrentConfig(char* Config)
+{
+	return true;
+}
+
 INT_PTR CALLBACK CustomHideSettingsDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	int iState, iCount;
-	char szText[MAX_PATH];
+	HANDLE hFile;
+	int* pBuff;
+	char szConfigName[MAX_PATH], szSectionsNamesList[MAX_BYTES], szAux[MAX_PATH], CurrentConfig[MAX_PATH];
+	char szDefString[] = {""};
 
 	switch(uMsg)
 	{
 		case WM_INITDIALOG:
+			if(!aadp_GetCurrentConfig(CurrentConfig))
+				strcpy_s(CurrentConfig, MAX_PATH, "Current config: None");
+
+			Static_SetTxt(hWin, STATIC_CURRENTCONFIG, CurrentConfig);
+
 			hConfigLb = GetDlgItem(hWin, LB_CONFIGLIST);
+
+			if(_Pluginreadstringfromini(hModule, "ConfigFilePath", aadpPathToConfigFile, szDefString))
+			{
+				aadp_GetSectionNamesInIniFile(aadpPathToConfigFile, szSectionsNamesList, MAX_BYTES);
+				aadp_ListBox_AddData(hConfigLb, szSectionsNamesList);
+			}
+
 			break;
 
 		case WM_COMMAND:
 			switch(LOWORD(wParam))
 			{
-				case BT_ADDCONFIG:
-					GetDlgItemText(hWin, EDIT_NAME, szText, MAX_PATH);
-					if(strlen(szText) > 0)
-						ListBox_AddString(hConfigLb, szText);
+				case BT_SAVECONFIG:
+					GetDlgItemText(hWin, EDIT_NAME, szConfigName, MAX_PATH);
+					if(strlen(szConfigName) != 0)
+					{	
+						ListBox_AddString(hConfigLb, szConfigName);
+
+						hFile = aadp_CreateConfigFile(hModule);
+
+						if(hFile != INVALID_HANDLE_VALUE)
+						{
+							if(_Pluginwritestringtoini(hModule, "ConfigFilePath", aadpPathToConfigFile))
+								WriteAadpConfig(szConfigName);
+							else
+								Addtolist(0, HIGHLIGHTED, "Can\'t write to Ollydbg configuration file.");
+
+							CloseHandle(hFile);
+						}
+					}
+					else
+						MessageBox(hWin, TEXT("You must specify a name for the configuration"), TEXT("No config name!"), MB_ICONWARNING);
+					break;
+
+				case BT_APPLYCONFIG:
 					break;
 
 				case BT_REMOVEFROMCONFIGLIST:
 					iCount = ListBox_GetCount(hConfigLb);
 					if(( iCount > 0) && (ListBox_GetSelCount(hConfigLb) > 0))
 					{
-						Addtolist(0, HIGHLIGHTED, "1: %d", iCount);
 						while(iCount >= 0)
 						{
 							iState = ListBox_GetSel(hConfigLb, iCount);
 							if((iState > 0) && (iState != LB_ERR))
+							{
+								ListBox_GetText(hConfigLb, iCount, szAux);
+								aadp_DeleteSectionFromIni(szAux, aadpPathToConfigFile);
 								ListBox_DeleteString(hConfigLb, iCount);
+							}
+
 							iCount--;
 						}
 					}
@@ -698,16 +944,16 @@ static void Createaadp4ollywindow(void) {
 
 }
 
-BOOL WINAPI DllMain(HINSTANCE hi,DWORD reason,LPVOID reserved) {
+BOOL WINAPI DllMain(HINSTANCE hi, DWORD reason, LPVOID reserved) {
 	if (reason == DLL_PROCESS_ATTACH)
 		hinst = hi;
 	return 1;
-};
+}
 
 extc int _export cdecl ODBG_Plugindata(char shortname[32]) {
   strcpy_s(shortname, sizeof("aadp4olly"), "aadp4olly");
   return PLUGIN_VERSION;
-};
+}
 
 extc int _export cdecl ODBG_Plugininit(int ollydbgversion,HWND hw,ulong *features){
 	
@@ -720,6 +966,9 @@ extc int _export cdecl ODBG_Plugininit(int ollydbgversion,HWND hw,ulong *feature
 	Addtolist(0,-1,"  Written by +NCR/CRC! [ReVeRsEr]");
 
 	InitGlobalArrays();
+
+	//if(AdjustPrivileges() == RTN_ERROR)
+	//	MessageBox(hw, TEXT("Couldn\'t adjust privileges"), TEXT("AdjustPrivileges error"), MB_ICONERROR);
 
 	CheckForOptions(AadbgTricksDlgHwnd, TABAADBTRICKS);
 	//CheckForOptions(OllyFixesDlgHwnd, TABOLLYFIXES);
@@ -850,7 +1099,7 @@ extc void _export cdecl ODBG_Pluginmainloop(DEBUG_EVENT *debugevent) {
 }
 
 extc int _export cdecl ODBG_Pluginmenu(int origin,char data[4096],void *item) {
-	char str[] = "0 &Options\tAlt+Q|1 &Help,2 &Check for &update,3 &About";
+	char str[] = "0 &Options\tAlt+Q|1 &Help,2 &Check for &updates,3 &About";
 	if (origin!=PM_MAIN)
 		return 0;
 	strcpy_s(data, 4096, str);

@@ -83,13 +83,15 @@
 	#define ODBG_Pausedex        _ODBG_Pausedex
 	#define ODBG_Plugincmd       _ODBG_Plugincmd
 
-	#define Plugingetvalue _Plugingetvalue
-	#define Getstatus _Getstatus
-	#define Addtolist _Addtolist
-	#define Registerpluginclass _Registerpluginclass
-	#define Unregisterpluginclass _Unregisterpluginclass
-	#define Pluginwriteinttoini _Pluginwriteinttoini
-	#define Pluginreadintfromini _Pluginreadintfromini
+	#define Plugingetvalue			_Plugingetvalue
+	#define Getstatus				_Getstatus
+	#define Addtolist				_Addtolist
+	#define Registerpluginclass		_Registerpluginclass
+	#define Unregisterpluginclass	_Unregisterpluginclass
+	#define Pluginwriteinttoini		_Pluginwriteinttoini
+	#define Pluginreadintfromini	_Pluginreadintfromini
+	#define Pluginwritestringtoini	_Pluginwritestringtoini
+	#define Pluginreadstringfromini	_Pluginreadstringfromini
 
 #endif
 
