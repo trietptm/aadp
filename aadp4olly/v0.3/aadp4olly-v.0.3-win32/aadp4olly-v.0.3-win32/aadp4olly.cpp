@@ -175,12 +175,13 @@ void InitGlobalArrays(void)
 
 int aadp_Readintfromini(char* ConfigName, char* Key, int DefValue)
 {
-	return 1;
+	return GetPrivateProfileInt(ConfigName, Key, DefValue, aadpPathToConfigFile);
 }
 
-int aadp_Readstringfromini(char* Key, char* OutputString, char* DefString)
+int aadp_Readstringfromini(char* ConfigName, char* Key, char* OutputString, int OutputStringSize, char* DefString)
 {
-	return 1;
+	char szDef[] = {""};
+	return GetPrivateProfileString(ConfigName, Key, szDef, OutputString, OutputStringSize, aadpPathToConfigFile);
 }
 
 HANDLE aadp_CreateConfigFile(HMODULE hMod)
@@ -761,11 +762,23 @@ void ReadAadpConfig(char* ConfigName)
 		aadpTricks[i].functionState = aadp_Readintfromini(ConfigName, aadpTricks[i].functionName, USEDEFAULT);
 
 	for(i = 0; i < SIZEOLLYFIXESARRAY; i++)
-		ollyFixes[i].functionState = aadp_Readintfromini(ConfigName, ollyFixes[i].functionName, ollyFixes[i].functionState);
+		ollyFixes[i].functionState = aadp_Readintfromini(ConfigName, ollyFixes[i].functionName, USEDEFAULT);
 
 	for(i = 0; i < SIZEADVSETTINGSARRAY; i++)
-		aadpSettings[i].functionState = aadp_Readintfromini(ConfigName, aadpSettings[i].functionName, aadpSettings[i].functionState);
+		aadpSettings[i].functionState = aadp_Readintfromini(ConfigName, aadpSettings[i].functionName, USEDEFAULT);
 
+}
+
+int aadp_GetPathToIniFile(char* Out_PathToIni, int BuffLen)
+{
+	char szDefString[] = {""};
+	char szAux[MAX_PATH];
+	if(_Pluginreadstringfromini(hModule, "ConfigFilePath", szAux, szDefString))
+	{
+		strcpy_s(Out_PathToIni, BuffLen, szAux);
+		return true;
+	}
+	return false;
 }
 
 int aadp_DeleteSectionFromIni(char* szAux, char* PathToIni)
@@ -778,15 +791,98 @@ bool Static_SetTxt(HWND hWin, int StaticId, char* szText)
 	return SetDlgItemText(hWin, StaticId, szText);
 }
 
-bool aadp_GetCurrentConfig(char* Config)
+bool aadp_GetCurrentConfig(char* OutConfigBuffer, int OutConfigBufferLen)
 {
-	return true;
+	/*	
+		1. Enumerate all sections in the .ini file.
+		2. Iterate over all sections.
+			2.1. Get the "Current" key of every section.
+			2.2. If the "Current" key is set to true (1), then, return the name of the section.
+		3. If none of the sections have the "Current" key set to true (1), then, apply the default config.
+		4. Default config is: all options set to false (0).
+	*/
+
+	int slen;
+	char szPathToIni[MAX_PATH], szSectionsNamesList[MAX_BYTES];
+	char* SectionsNamesList = szSectionsNamesList;
+
+	if(aadp_GetPathToIniFile(szPathToIni, MAX_PATH))
+	{
+		if(aadp_GetSectionNamesInIniFile(szPathToIni, szSectionsNamesList, MAX_BYTES))
+		{
+			slen = strlen(SectionsNamesList);
+			while(*SectionsNamesList != 0)
+			{
+				if(aadp_Readintfromini(SectionsNamesList, "Current", USEDEFAULT) == 1)
+				{
+					strcpy_s(OutConfigBuffer, OutConfigBufferLen, SectionsNamesList);
+					return true;
+				}
+
+				SectionsNamesList += slen + 1;
+			}
+		}
+	}
+
+	return false;
+}
+
+bool aadp_SetConfigToFalse(char* ConfigToSet)
+{
+	if(aadp_Writeinttoini(ConfigToSet, "Current", 0))
+		return true;
+
+	return false;
+}
+
+void UI_UpdateCheckBoxes(int Tab)
+{
+	int i;
+
+	switch(Tab)
+	{
+		case TABAADBTRICKS: 
+			for(i = 0; i < SIZEAADBTRICKSARRAY; i++)
+				CheckDlgButton(AadbgTricksDlgHwnd, aadpTricks[i].functionId, aadpTricks[i].functionState);
+			break;
+
+		case TABOLLYFIXES:
+			for(i = 0; i < SIZEOLLYFIXESARRAY; i++)
+				CheckDlgButton(OllyFixesDlgHwnd, ollyFixes[i].functionId, ollyFixes[i].functionState);
+			break;
+
+		case TABADVSETTINGS:
+			for(i = 0; i < SIZEADVSETTINGSARRAY; i++)
+				CheckDlgButton(SettingsDlgHwnd, aadpSettings[i].functionId, aadpSettings[i].functionState);
+			break;
+
+		default: 
+			break;
+	}
+}
+
+bool aadp_SetConfigAsCurrent(char* ConfigToSetAsCurrent)
+{
+	int i;
+
+	if(aadp_Writeinttoini(ConfigToSetAsCurrent, "Current", 1))
+	{
+		ReadAadpConfig(ConfigToSetAsCurrent);
+
+		UI_UpdateCheckBoxes(TABAADBTRICKS);
+		UI_UpdateCheckBoxes(TABOLLYFIXES);
+		UI_UpdateCheckBoxes(TABADVSETTINGS);
+
+		return true;
+	}
+
+	return false;
 }
 
 INT_PTR CALLBACK CustomHideSettingsDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	int iState, iCount;
 	HANDLE hFile;
+	int iState, iCount;
 	int* pBuff;
 	char szConfigName[MAX_PATH], szSectionsNamesList[MAX_BYTES], szAux[MAX_PATH], CurrentConfig[MAX_PATH];
 	char szDefString[] = {""};
@@ -794,7 +890,7 @@ INT_PTR CALLBACK CustomHideSettingsDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wP
 	switch(uMsg)
 	{
 		case WM_INITDIALOG:
-			if(!aadp_GetCurrentConfig(CurrentConfig))
+			if(!aadp_GetCurrentConfig(CurrentConfig, MAX_PATH))
 				strcpy_s(CurrentConfig, MAX_PATH, "Current config: None");
 
 			Static_SetTxt(hWin, STATIC_CURRENTCONFIG, CurrentConfig);
@@ -835,6 +931,30 @@ INT_PTR CALLBACK CustomHideSettingsDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wP
 					break;
 
 				case BT_APPLYCONFIG:
+					iCount = ListBox_GetCount(hConfigLb);
+					if(iCount > 0)
+					{
+						if(ListBox_GetSelCount(hConfigLb) > 0 && ListBox_GetSelCount(hConfigLb) <= 1)
+						{
+							while(iCount >= 0)
+							{
+								iState = ListBox_GetSel(hConfigLb, iCount);
+								if((iState > 0) && (iState != LB_ERR))
+								{
+									ListBox_GetText(hConfigLb, iCount, szAux);
+
+									if(!aadp_SetConfigAsCurrent(szAux))
+										Addtolist(0, HIGHLIGHTED, "Can\'t set %s configuration as current.", szAux);
+								}
+
+								iCount--;
+							}
+						}
+						else
+						{
+							MessageBox(hWin, TEXT("You can only apply one configuration at a time!"), TEXT("Selection warning"), MB_ICONWARNING);
+						}
+					}
 					break;
 
 				case BT_REMOVEFROMCONFIGLIST:
