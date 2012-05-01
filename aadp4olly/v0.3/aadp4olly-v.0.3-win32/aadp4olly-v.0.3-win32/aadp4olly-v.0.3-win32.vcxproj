@@ -84,12 +84,14 @@
   <ItemGroup>
     <ClCompile Include="aadp4olly.cpp" />
     <ClCompile Include="external\tabs.cpp" />
+    <ClCompile Include="helpers.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="aadlib\aadlib-v0.2-win32.h" />
     <ClInclude Include="aadp4olly.h" />
     <ClInclude Include="external\Plugin.h" />
     <ClInclude Include="external\tabs.h" />
+    <ClInclude Include="helpers.h" />
     <ClInclude Include="resources\resource.h" />
   </ItemGroup>
   <ItemGroup>
