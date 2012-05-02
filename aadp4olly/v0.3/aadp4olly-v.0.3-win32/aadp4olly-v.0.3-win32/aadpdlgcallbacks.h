@@ -17,48 +17,26 @@
  
  You should have received a copy of the GNU Lesser General Public
  License along with this library.  If not, see <http://www.gnu.org/licenses/>.
-
- Author: Nahuel C. Riva
- Date: -
- @: nahuelriva@gmail.com
- Blog: http://crackinglandia.blogspot.com
- Twitter: @crackinglandia
 */
 
+#include <tchar.h>
+#include <Strsafe.h>
+#include <Commctrl.h>
 
-#include <windows.h>
-#include <Windowsx.h>
-#include <Shlwapi.h>
-
-#include "helpers.h"
-
-#ifndef __AADPGLOBALS_H__
-#include "aadpglobals.h"
-#endif
-
-#ifndef __AADPCONSTANTS_H__
-#include "aadpconstants.h"
-#endif
-
-#include "aadpdlgcallbacks.h"
-
-#ifndef __AADPRESOURCES_H_
-#include "resources\\resource.h"
-#endif
-
-#ifndef __OLLYHEADER_H__
-#include "external\\plugin.h"
-#endif
+#pragma comment(lib, "comctl32.lib")
 
 #ifndef TABS_H
-#include "external\\tabs.h"
+#include "external\tabs.h"
 #endif
 
-#ifndef __AADPLIB_H__
-#include "aadlib\\aadlib-v0.2-win32.h"
+#ifndef __AADPDLGCALLBACKS_H__
+#define __AADPDLGCALLBACKS_H__
+
+INT_PTR CALLBACK CustomHideSettingsDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wParam, LPARAM lParam);
+INT_PTR CALLBACK AadbgTricksDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wParam, LPARAM lParam);
+INT_PTR CALLBACK OllyFixesDlgHandlerTabHandler(HWND hWin, UINT uMsg, WPARAM wParam, LPARAM lParam);
+INT_PTR CALLBACK AboutDlgHandler(HWND Window, UINT Message, WPARAM wParam, LPARAM lParam);
+INT_PTR CALLBACK SettingsDlgTabHandler(HWND hWin, UINT uMsg, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK aadp4Ollyproc(HWND hWin,UINT msg,WPARAM wp,LPARAM lp);
+
 #endif
-
-#pragma comment(lib, "Shlwapi.lib")
-#pragma comment(lib, "external\\OLLYDBG.LIB")
-#pragma comment(lib, "aadlib\\aadlib-v0.2-win32.lib")
-
