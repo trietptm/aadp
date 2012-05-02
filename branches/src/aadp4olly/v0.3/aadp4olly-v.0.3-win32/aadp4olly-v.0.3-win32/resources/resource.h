@@ -1,6 +1,30 @@
+// $Id$
+
+/*
+ Anti-Anti-Debugging Plugin for Ollydbg v0.3 - LGPL 3.0
+
+ Copyright (C) 2012 +NCR/CRC! [ReVeRsEr] http://crackinglandia.blogspot.com
+
+ This library is free software: you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation, either
+ version 3 of the License, or any later version.
+ 
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+ 
+ You should have received a copy of the GNU Lesser General Public
+ License along with this library.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #ifndef IDC_STATIC
 #define IDC_STATIC (-1)
 #endif
+
+#ifndef __AADPRESOURCES_H__
+#define __AADPRESOURCES_H__
 
 #define CUSTOMHIDESETTINGSDLG                   111
 #define ADVANCEDSETTINGS                        112
@@ -58,3 +82,4 @@
 #define BT_APPLYCONFIG                          1052
 #define BT_SAVECONFIG                           1055
 #define BT_REMOVEFROMCONFIGLIST                 1057
+#endif

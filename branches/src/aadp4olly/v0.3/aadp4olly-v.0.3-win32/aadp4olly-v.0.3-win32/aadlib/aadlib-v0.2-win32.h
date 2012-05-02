@@ -25,6 +25,9 @@
  Twitter: @crackinglandia
 */
 
+#ifndef __AADPLIB_H__
+#define __AADPLIB_H__
+
 #pragma comment(lib, "aadlib\\aadlib-v0.2-win32.lib")
 
 // Functions that do the magic ...
@@ -51,3 +54,4 @@ HANDLE __stdcall hd_GetProcHandleByPid(DWORD pid);
 DWORD __stdcall hd_GetProcPidByHandle(HANDLE pHandle);
 void* __stdcall hd_GetPEBAddress(DWORD pid);
 BOOL __stdcall hd_DllInjector(DWORD ProcessId, char* DLLLibPath, bool WaitForResponse);
+#endif

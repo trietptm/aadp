@@ -31,6 +31,10 @@
 // If you prefere Borland, this will force necessary settings (but, as a side
 // effect, may cause plenty of warnings if other include files will be compiled
 // with different options):
+
+#ifndef __OLLYHEADER_H__
+#define __OLLYHEADER_H__
+
 #ifdef __BORLANDC__
 
   #pragma option -a1                   // Byte alignment
@@ -1607,4 +1611,4 @@ extc int  _export cdecl ODBG_Paused(int reason,t_reg *reg);
 extc int  _export cdecl ODBG_Pausedex(int reasonex,int dummy,t_reg *reg,
                         DEBUG_EVENT *debugevent);
 extc int  _export cdecl ODBG_Plugincmd(int reason,t_reg *reg,char *cmd);
-                        
+#endif

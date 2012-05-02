@@ -17,48 +17,34 @@
  
  You should have received a copy of the GNU Lesser General Public
  License along with this library.  If not, see <http://www.gnu.org/licenses/>.
-
- Author: Nahuel C. Riva
- Date: -
- @: nahuelriva@gmail.com
- Blog: http://crackinglandia.blogspot.com
- Twitter: @crackinglandia
 */
 
-
-#include <windows.h>
-#include <Windowsx.h>
-#include <Shlwapi.h>
-
-#include "helpers.h"
-
-#ifndef __AADPGLOBALS_H__
-#include "aadpglobals.h"
-#endif
-
 #ifndef __AADPCONSTANTS_H__
-#include "aadpconstants.h"
+#define __AADPCONSTANTS_H__
+
+#define MAX_BYTES 4096
+#define USEDEFAULT 0x80000000
+
+#define TABAADBTRICKS		11
+#define TABOLLYFIXES		12
+#define TABADVSETTINGS		13
+#define TABCUSTOMSETTINGS	14
+
+#define SIZEAADBTRICKSARRAY 18
+#define SIZEOLLYFIXESARRAY	5
+#define SIZEADVSETTINGSARRAY 12
+
+#define NOCOUNTER 1
+#define COUNTERPLUSONE 2
+#define RANDOMCOUNTER 3
+
+#define RTN_OK 1
+#define RTN_USAGE 0
+#define RTN_ERROR 13
+
+#define VERSIONHI		1
+#define VERSIONLO		10
+#define HIGHLIGHTED		1
+#define GRAYED			-1
+#define STANDARD		0
 #endif
-
-#include "aadpdlgcallbacks.h"
-
-#ifndef __AADPRESOURCES_H_
-#include "resources\\resource.h"
-#endif
-
-#ifndef __OLLYHEADER_H__
-#include "external\\plugin.h"
-#endif
-
-#ifndef TABS_H
-#include "external\\tabs.h"
-#endif
-
-#ifndef __AADPLIB_H__
-#include "aadlib\\aadlib-v0.2-win32.h"
-#endif
-
-#pragma comment(lib, "Shlwapi.lib")
-#pragma comment(lib, "external\\OLLYDBG.LIB")
-#pragma comment(lib, "aadlib\\aadlib-v0.2-win32.lib")
-
